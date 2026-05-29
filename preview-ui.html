@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crush Hub — Prévisualisation UI Dark Bento</title>
+<style>
+:root {
+  --bg:#0a0b1e; --surface:#131527; --surface-2:#1a1d35;
+  --glass:rgba(255,255,255,0.04); --border:rgba(255,255,255,0.08);
+  --border-strong:rgba(255,255,255,0.14);
+  --indigo:#6366f1; --indigo-2:#818cf8; --magenta:#ec4899;
+  --cyan:#06b6d4; --emerald:#10b981; --amber:#f59e0b;
+  --rose:#f43f5e; --text:#f5f5f7; --muted:#9ca3af; --muted-2:#6b7280;
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh}
+body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(800px circle at 20% 10%,rgba(99,102,241,.18),transparent 50%),
+             radial-gradient(700px circle at 80% 0%,rgba(236,72,153,.14),transparent 45%),
+             radial-gradient(900px circle at 60% 80%,rgba(6,182,212,.1),transparent 50%)}
+
+/* ── Demo header ── */
+.demo-bar{position:fixed;top:0;left:0;right:0;z-index:200;
+  background:rgba(10,11,30,.92);border-bottom:1px solid var(--border);
+  backdrop-filter:blur(20px);padding:.6rem 1.2rem;
+  display:flex;align-items:center;gap:.9rem}
+.demo-label{font-size:.72rem;font-weight:700;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.14em;white-space:nowrap}
+.tabs{display:flex;gap:.35rem;overflow-x:auto;flex:1}
+.tab{padding:.38rem .75rem;border-radius:8px;font-size:.8rem;font-weight:600;
+  cursor:pointer;border:1px solid var(--border);background:var(--glass);
+  color:var(--muted);white-space:nowrap;transition:all 120ms;font-family:var(--font)}
+.tab:hover{color:var(--text);border-color:var(--border-strong)}
+.tab.on{background:linear-gradient(135deg,rgba(99,102,241,.22),rgba(236,72,153,.12));
+  border-color:rgba(99,102,241,.45);color:var(--indigo-2)}
+
+/* ── Shell ── */
+.shell{display:grid;grid-template-columns:272px minmax(0,1fr);
+  min-height:100vh;padding-top:50px;position:relative;z-index:1}
+
+/* ── Sidebar ── */
+.sb{position:sticky;top:50px;height:calc(100vh - 50px);overflow-y:auto;
+  display:flex;flex-direction:column;justify-content:space-between;
+  padding:1.3rem;border-right:1px solid var(--border);
+  background:rgba(13,14,30,.72);backdrop-filter:blur(20px)}
+.brand{display:flex;align-items:center;gap:.65rem;margin-bottom:1.4rem}
+.brand-mark{width:2.6rem;height:2.6rem;border-radius:12px;
+  background:linear-gradient(135deg,var(--indigo),var(--magenta));
+  display:grid;place-items:center;color:#fff;font-weight:800;font-size:1rem;
+  box-shadow:0 4px 18px rgba(99,102,241,.4)}
+.brand-copy h1{font-size:.95rem;font-weight:700;line-height:1.1}
+.brand-copy p{font-size:.74rem;color:var(--muted)}
+.ns{padding:.55rem .55rem .2rem;font-size:.66rem;text-transform:uppercase;
+  letter-spacing:.12em;color:var(--muted-2);font-weight:700;margin-top:.7rem}
+.nl{display:flex;align-items:center;gap:.6rem;padding:.6rem .8rem;
+  border-radius:10px;color:var(--muted);text-decoration:none;
+  font-size:.875rem;border:1px solid transparent;cursor:pointer;
+  transition:all 120ms;background:none;width:100%;text-align:left;font-family:var(--font)}
+.nl:hover{color:var(--text);background:var(--glass)}
+.nl.on{color:var(--text);background:linear-gradient(135deg,rgba(99,102,241,.18),rgba(236,72,153,.1));
+  border-color:rgba(99,102,241,.3)}
+.sb-foot{padding:.9rem;background:var(--glass);border:1px solid var(--border);
+  border-radius:14px;margin-top:.8rem}
+.sb-foot strong{font-size:.84rem}
+.sb-foot p{font-size:.74rem;color:var(--muted);margin-top:.25rem;line-height:1.4}
+
+/* ── Content area ── */
+.area{padding:1.4rem;display:flex;flex-direction:column;gap:1.3rem}
+
+/* ── Page show/hide ── */
+.pg{display:none;flex-direction:column;gap:1.3rem}
+.pg.on{display:flex}
+
+/* ── Topbar ── */
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:1rem;
+  padding:.8rem 1.1rem;background:var(--surface);border:1px solid var(--border);
+  border-radius:14px}
+.tsearch{display:flex;align-items:center;gap:.55rem;padding:.45rem .8rem;
+  background:var(--glass);border:1px solid var(--border);border-radius:9px;
+  color:var(--muted);font-size:.86rem;flex:1;max-width:400px}
+.tactions{display:flex;align-items:center;gap:.55rem}
+.iBtn{position:relative;width:34px;height:34px;background:var(--glass);
+  border:1px solid var(--border);border-radius:9px;color:var(--muted);
+  display:grid;place-items:center;cursor:pointer;font-size:.9rem}
+.bdot{position:absolute;top:5px;right:5px;width:7px;height:7px;
+  border-radius:50%;background:var(--magenta)}
+.uchip{display:flex;align-items:center;gap:.55rem;
+  padding:.3rem .8rem .3rem .3rem;background:var(--glass);
+  border:1px solid var(--border);border-radius:999px;cursor:pointer}
+.av{width:28px;height:28px;border-radius:50%;
+  background:linear-gradient(135deg,var(--indigo),var(--magenta));
+  display:grid;place-items:center;color:#fff;font-weight:700;font-size:.78rem}
+.uname{font-size:.82rem;font-weight:600}
+.urole{font-size:.68rem;color:var(--muted)}
+.chev{color:var(--muted);font-size:.68rem}
+
+/* ── Section header ── */
+.sh{display:grid;gap:.35rem}
+.ew{font-size:.7rem;text-transform:uppercase;letter-spacing:.16em;
+  color:var(--muted);font-weight:700}
+.sh h1{font-size:1.9rem;letter-spacing:-.03em;font-weight:800}
+.sh p{color:var(--muted);font-size:.9rem;max-width:50ch;line-height:1.5}
+
+/* ── Status banner ── */
+.sbanner{padding:.8rem 1rem;border-radius:12px;font-size:.86rem;
+  background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.25);
+  color:var(--indigo-2)}
+
+/* ── Card ── */
+.card{background:var(--surface);border:1px solid var(--border);
+  border-radius:16px;padding:1.2rem;position:relative;overflow:hidden;
+  transition:border-color 200ms}
+.card:hover{border-color:var(--border-strong)}
+.clabel{font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;
+  color:var(--muted);font-weight:700;margin-bottom:.45rem}
+.ctitle{font-size:.98rem;font-weight:700;letter-spacing:-.01em}
+.chead{display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:.9rem;gap:.5rem}
+.lmore{font-size:.8rem;font-weight:600;color:var(--indigo-2);text-decoration:none}
+.glow::before{content:"";position:absolute;inset:0;
+  background:radial-gradient(320px circle at top right,rgba(99,102,241,.12),transparent 55%);
+  pointer-events:none}
+
+/* ── Bento ── */
+.bento{display:grid;grid-template-columns:repeat(12,1fr);gap:.9rem}
+.s4{grid-column:span 4}.s6{grid-column:span 6}
+.s7{grid-column:span 7}.s5{grid-column:span 5}.s12{grid-column:span 12}
+
+/* ── Big number ── */
+.bnum{font-size:2.2rem;font-weight:800;letter-spacing:-.04em;
+  background:linear-gradient(135deg,var(--text),var(--muted));
+  -webkit-background-clip:text;background-clip:text;color:transparent;margin-top:.2rem}
+.trend{display:inline-flex;align-items:center;gap:.25rem;
+  font-size:.78rem;font-weight:700;color:var(--emerald);margin-top:.25rem}
+.trend.neg{color:var(--rose)}
+.spark{width:100%;height:42px;margin-top:.7rem}
+
+/* ── Metrics row ── */
+.mrow{display:grid;grid-template-columns:repeat(4,1fr);gap:.9rem}
+.mrow3{display:grid;grid-template-columns:repeat(3,1fr);gap:.9rem}
+.mc{background:var(--surface);border:1px solid var(--border);
+  border-radius:14px;padding:1rem 1.1rem}
+.mlabel{font-size:.72rem;color:var(--muted);text-transform:uppercase;
+  letter-spacing:.08em;font-weight:700}
+.mval{font-size:1.7rem;font-weight:800;letter-spacing:-.04em;
+  background:linear-gradient(135deg,var(--text),var(--muted));
+  -webkit-background-clip:text;background-clip:text;color:transparent;margin-top:.25rem}
+.mtrend{font-size:.75rem;font-weight:700;color:var(--emerald);margin-top:.15rem}
+.mtrend.neg{color:var(--rose)}
+.mtrend.n{color:var(--muted)}
+.kicobox{display:inline-flex;align-items:center;justify-content:center;
+  width:32px;height:32px;border-radius:9px;font-size:.95rem;margin-bottom:.55rem}
+.ki-d{background:rgba(16,185,129,.12)}.ki-u{background:rgba(244,63,94,.12)}
+.ki-n{background:rgba(99,102,241,.12)}.ki-a{background:rgba(245,158,11,.12)}
+
+/* ── Pills ── */
+.pill{padding:.22rem .6rem;border-radius:999px;font-size:.72rem;font-weight:700}
+.p-high{background:rgba(244,63,94,.18);color:#fda4af}
+.p-med{background:rgba(245,158,11,.18);color:#fcd34d}
+.p-low{background:rgba(16,185,129,.18);color:#6ee7b7}
+.p-paid{background:rgba(16,185,129,.18);color:#6ee7b7}
+.p-pend{background:rgba(245,158,11,.18);color:#fcd34d}
+.p-over{background:rgba(244,63,94,.18);color:#fda4af}
+.p-sched{background:rgba(99,102,241,.18);color:var(--indigo-2)}
+.p-act{background:rgba(16,185,129,.18);color:#6ee7b7}
+.p-neg{background:rgba(245,158,11,.18);color:#fcd34d}
+.p-pros{background:rgba(99,102,241,.18);color:var(--indigo-2)}
+.p-pause{background:rgba(255,255,255,.07);color:var(--muted)}
+.p-urg{background:rgba(244,63,94,.18);color:#fda4af}
+
+/* ── Activity dots ── */
+.adot{width:8px;height:8px;border-radius:50%;background:var(--indigo);flex-shrink:0}
+.adot.g{background:var(--emerald)}.adot.a{background:var(--amber)}
+.adot.r{background:var(--rose)}.adot.c{background:var(--cyan)}
+
+/* ── Event row ── */
+.evrow{display:grid;grid-template-columns:auto 1fr auto;gap:.75rem;
+  align-items:center;padding:.6rem .85rem;background:var(--glass);
+  border:1px solid var(--border);border-radius:11px}
+.evd{text-align:center;padding:.22rem .45rem;background:rgba(99,102,241,.15);
+  border-radius:7px;min-width:42px}
+.evd-day{font-size:.95rem;font-weight:800;color:var(--indigo-2);line-height:1}
+.evd-mon{font-size:.62rem;color:var(--muted);text-transform:uppercase}
+.evname{font-size:.88rem;font-weight:700}
+.evsub{font-size:.74rem;color:var(--muted)}
+.evg{padding:.18rem .5rem;background:var(--glass);border:1px solid var(--border);
+  border-radius:999px;font-size:.72rem;color:var(--muted)}
+
+/* ── Activity row ── */
+.arow{display:flex;align-items:center;gap:.65rem;padding:.5rem 0;font-size:.84rem}
+.atime{font-size:.7rem;color:var(--muted-2);margin-left:auto;white-space:nowrap}
+
+/* ── Priority row ── */
+.prow{display:grid;grid-template-columns:88px 1fr auto auto;gap:.9rem;
+  align-items:center;padding:.75rem .9rem;background:var(--glass);
+  border:1px solid var(--border);border-radius:11px;
+  cursor:pointer;transition:border-color 150ms}
+.prow:hover{border-color:var(--indigo)}
+.pid{font-family:monospace;font-size:.78rem;color:var(--muted)}
+.page{font-size:.8rem;color:var(--muted)}
+
+/* ── Table ── */
+.twrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.86rem}
+th{padding:.7rem .55rem;border-bottom:1px solid var(--border-strong);text-align:left;
+  font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;
+  color:var(--muted);font-weight:700}
+td{padding:.7rem .55rem;border-bottom:1px solid var(--border);color:var(--text)}
+tr:hover td{background:rgba(255,255,255,.02)}
+tr.ov td{background:rgba(244,63,94,.07)}
+tfoot td{background:var(--glass);border-top:1px solid var(--border-strong);font-weight:700}
+
+/* ── Method chip ── */
+.mchip{display:inline-block;padding:.16rem .48rem;border-radius:6px;
+  background:var(--glass);color:var(--muted);font-size:.74rem;font-weight:600;
+  border:1px solid var(--border)}
+
+/* ── Location row ── */
+.lrow{display:grid;grid-template-columns:1.6fr auto .7fr .85fr auto;gap:.9rem;
+  align-items:center;padding:.85rem .95rem;background:var(--glass);
+  border:1px solid var(--border);border-radius:12px;cursor:pointer;transition:all 150ms}
+.lrow:hover{border-color:var(--indigo);background:rgba(99,102,241,.06)}
+.lname strong{font-size:.92rem}
+.lname span{display:block;font-size:.8rem;color:var(--muted);margin-top:.08rem}
+.lmeta{text-align:right;font-size:.8rem;color:var(--muted)}
+
+/* ── Form ── */
+.ff{display:grid;gap:.38rem}
+.ff label{font-size:.8rem;font-weight:600;color:var(--muted)}
+.fi{padding:.75rem .9rem;background:var(--glass);border:1px solid var(--border);
+  border-radius:11px;color:var(--text);font-size:.88rem;
+  font-family:var(--font);width:100%;transition:all 150ms}
+.fi:focus{outline:none;border-color:var(--indigo);
+  box-shadow:0 0 0 3px rgba(99,102,241,.2)}
+.fi::placeholder{color:var(--muted-2)}
+.fi[readonly]{opacity:.55;cursor:not-allowed}
+
+/* ── Buttons ── */
+.btn{padding:.8rem 1.2rem;border:0;border-radius:11px;
+  background:linear-gradient(135deg,var(--indigo),#4f46e5);color:#fff;
+  font-weight:700;font-size:.87rem;cursor:pointer;
+  transition:all 150ms;font-family:var(--font)}
+.btn:hover{box-shadow:0 10px 26px rgba(99,102,241,.35);transform:translateY(-1px)}
+.btn.sec{background:var(--glass);color:var(--text);
+  border:1px solid var(--border-strong)}
+.btn.sec:hover{border-color:var(--indigo);transform:none;box-shadow:none}
+.btn.sm{padding:.38rem .75rem;font-size:.78rem}
+
+/* ── Team card ── */
+.tcard{background:var(--surface);border:1px solid var(--border);
+  border-radius:16px;padding:1.2rem;text-align:center;
+  transition:border-color 200ms}
+.tcard:hover{border-color:var(--border-strong)}
+.tav{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;
+  margin:0 auto .85rem;font-size:1.25rem;font-weight:800;color:#fff}
+.tsgrid{display:grid;grid-template-columns:1fr 1fr;gap:.45rem;margin-top:.85rem}
+.tsc{background:var(--glass);border-radius:9px;padding:.45rem}
+.tsn{font-size:1.05rem;font-weight:700}
+.tsl{font-size:.67rem;color:var(--muted);margin-top:.08rem}
+
+/* ── Shift row ── */
+.srow{display:grid;grid-template-columns:auto 1fr auto auto;gap:.75rem;
+  align-items:center;padding:.65rem .85rem;background:var(--glass);
+  border:1px solid var(--border);border-radius:11px;transition:border-color 150ms}
+.srow:hover{border-color:var(--border-strong)}
+.sdate{padding:.22rem .5rem;background:rgba(99,102,241,.15);
+  border-radius:7px;text-align:center}
+.sdaten{font-size:1rem;font-weight:800;color:var(--indigo-2);line-height:1}
+.sdated{font-size:.6rem;color:var(--muted);text-transform:uppercase}
+.sname{font-size:.88rem;font-weight:700}
+.ssub{font-size:.74rem;color:var(--muted)}
+.stime{font-family:monospace;font-size:.78rem;color:var(--muted);
+  background:var(--glass);border:1px solid var(--border);
+  padding:.18rem .48rem;border-radius:5px}
+
+/* ── Check item ── */
+.chkrow{display:flex;align-items:center;gap:.65rem;padding:.65rem .85rem;
+  background:var(--glass);border:1px solid var(--border);border-radius:11px}
+.chkc{width:22px;height:22px;border-radius:50%;display:grid;
+  place-items:center;font-size:.68rem;font-weight:700;flex-shrink:0}
+.chk-y{background:rgba(16,185,129,.15);color:var(--emerald)}
+.chk-n{background:rgba(255,255,255,.05);color:var(--muted-2)}
+
+/* ── TVA ── */
+.tvarow{display:flex;justify-content:space-between;align-items:center;
+  padding:.6rem .85rem;border-radius:8px;background:var(--glass);
+  border:1px solid var(--border)}
+.tvarow.tnet{background:linear-gradient(135deg,rgba(99,102,241,.15),rgba(236,72,153,.1));
+  border-color:rgba(99,102,241,.3);color:var(--indigo-2);font-weight:700}
+
+/* ── Timeline ── */
+.tlitem{display:grid;grid-template-columns:100px 1fr;gap:.9rem;
+  padding:.8rem .85rem;background:var(--glass);border:1px solid var(--border);
+  border-radius:11px}
+.tldate{font-size:.78rem;color:var(--muted)}
+.tltitle{font-size:.88rem;font-weight:700}
+.tldesc{font-size:.78rem;color:var(--muted);margin-top:.1rem}
+
+/* ── Resource card ── */
+.rtype{font-size:.68rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.1em;color:var(--indigo-2)}
+.rtitle{font-size:.95rem;font-weight:700;margin:.45rem 0 .25rem}
+.rdesc{font-size:.82rem;color:var(--muted);line-height:1.5}
+
+/* ── Role badge ── */
+.rbadge{display:inline-flex;align-items:center;gap:.3rem;margin-top:.65rem;
+  padding:.28rem .65rem;background:linear-gradient(135deg,rgba(99,102,241,.15),rgba(236,72,153,.1));
+  border:1px solid rgba(99,102,241,.3);border-radius:999px;
+  font-size:.72rem;font-weight:600;color:var(--indigo-2)}
+
+/* ── Quick tiles ── */
+.qtgrid{display:grid;grid-template-columns:repeat(9,1fr);gap:.65rem;margin-top:.5rem}
+.qt{aspect-ratio:1.1;background:var(--glass);border:1px solid var(--border);
+  border-radius:13px;display:grid;align-content:center;gap:.3rem;
+  text-align:center;cursor:pointer;padding:.65rem;transition:all 180ms}
+.qt:hover{border-color:var(--indigo);background:rgba(99,102,241,.08);
+  transform:translateY(-2px)}
+.qt.cur{border-color:var(--indigo);background:rgba(99,102,241,.1)}
+.qi{font-size:1.25rem}
+.ql{font-size:.72rem;font-weight:600;color:var(--muted)}
+.qt:hover .ql,.qt.cur .ql{color:var(--text)}
+.qt.locked{opacity:.35;cursor:not-allowed}
+.qt.locked:hover{border-color:var(--border);background:var(--glass);transform:none}
+
+/* ── Two-col layout ── */
+.two1{display:grid;grid-template-columns:.9fr 1.2fr;gap:.9rem}
+.two2{display:grid;grid-template-columns:1fr 1fr;gap:.9rem}
+.auto3{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:.9rem}
+
+/* ── Cashflow bar ── */
+.salbar{display:flex;height:5px;border-radius:999px;overflow:hidden;
+  background:var(--glass);margin-top:.35rem;min-width:70px}
+.sbn{background:var(--emerald)}.sbc{background:var(--amber)}
+</style>
+</head>
+<body>
+
+<!-- Demo navigation -->
+<div class="demo-bar">
+  <span class="demo-label">Prévisualisation →</span>
+  <div class="tabs">
+    <button class="tab on"  onclick="go('dashboard',this)">📊 Tableau de bord</button>
+    <button class="tab"     onclick="go('locations',this)">📍 Lieux</button>
+    <button class="tab"     onclick="go('accounting',this)">💰 Comptabilité</button>
+    <button class="tab"     onclick="go('requests',this)">📋 Demandes</button>
+    <button class="tab"     onclick="go('team',this)">👥 Équipe</button>
+    <button class="tab"     onclick="go('planning',this)">🗓️ Planning</button>
+    <button class="tab"     onclick="go('settings',this)">⚙️ Paramètres</button>
+    <button class="tab"     onclick="go('resources',this)">📁 Ressources</button>
+  </div>
+</div>
+
+<div class="shell">
+
+  <!-- Sidebar -->
+  <aside class="sb">
+    <div>
+      <div class="brand">
+        <div class="brand-mark">◆</div>
+        <div class="brand-copy"><h1>Crush Hub</h1><p>Espace équipe</p></div>
+      </div>
+      <div class="ns">Pilotage</div>
+      <button class="nl on" id="nl-dashboard" onclick="go('dashboard',this,true)">📊 Tableau de bord</button>
+      <button class="nl" id="nl-planning"  onclick="go('planning',this,true)">🗓️ Planning</button>
+      <button class="nl" id="nl-team"      onclick="go('team',this,true)">👥 Équipe</button>
+      <button class="nl" id="nl-requests"  onclick="go('requests',this,true)">📋 Demandes</button>
+      <div class="ns">Opérations</div>
+      <button class="nl" id="nl-locations" onclick="go('locations',this,true)">📍 Lieux</button>
+      <button class="nl" id="nl-resources" onclick="go('resources',this,true)">📁 Ressources</button>
+      <button class="nl">🎟️ Calculator</button>
+      <div class="ns">Finances</div>
+      <button class="nl" id="nl-accounting" onclick="go('accounting',this,true)">💰 Comptabilité</button>
+      <button class="nl">💼 Salaires</button>
+      <div class="ns">Compte</div>
+      <button class="nl" id="nl-settings" onclick="go('settings',this,true)">⚙️ Paramètres</button>
+    </div>
+    <div class="sb-foot">
+      <strong>🔒 Session sécurisée</strong>
+      <p>Identifiez-vous via Crush.lu pour synchroniser vos données.</p>
+    </div>
+  </aside>
+
+  <!-- Content -->
+  <div class="area">
+
+    <!-- ══════════ DASHBOARD ══════════ -->
+    <div class="pg on" id="pg-dashboard">
+      <header class="topbar">
+        <div class="tsearch">🔍 <span>Rechercher un client, un événement, une facture…</span></div>
+        <div class="tactions">
+          <div class="iBtn">🔔<span class="bdot"></span></div>
+          <div class="uchip"><div class="av">S</div><div><div class="uname">Sébastien</div><div class="urole">Fondateur</div></div><span class="chev">▾</span></div>
+        </div>
+      </header>
+
+      <div class="sbanner">✅ Données chargées depuis l'API — dernière synchronisation il y a 2 minutes.</div>
+
+      <div class="sh">
+        <p class="ew">Tableau de bord</p>
+        <h1>Pilotage global</h1>
+        <p>Vue d'ensemble des métriques clés, demandes actives et activité récente de l'équipe.</p>
+      </div>
+
+      <div class="bento">
+        <!-- Welcome -->
+        <div class="card glow s4">
+          <div class="clabel">Bienvenue</div>
+          <div style="font-size:1.25rem;font-weight:700;letter-spacing:-.02em">Bonsoir, Sébastien.</div>
+          <div style="color:var(--muted);font-size:.84rem;margin-top:.18rem">Dernière connexion il y a 2h.</div>
+          <span class="rbadge">🌟 Fondateur · Accès complet</span>
+        </div>
+
+        <!-- Requests -->
+        <div class="card s4">
+          <div class="clabel">Demandes en cours</div>
+          <div class="bnum">12</div>
+          <div class="trend">▲ +3 cette semaine</div>
+          <svg class="spark" viewBox="0 0 200 42" preserveAspectRatio="none">
+            <defs><linearGradient id="sg1" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stop-color="#6366f1" stop-opacity=".4"/>
+              <stop offset="100%" stop-color="#6366f1" stop-opacity="0"/>
+            </linearGradient></defs>
+            <path d="M0,38 L25,30 L50,34 L75,20 L100,26 L125,16 L150,22 L175,10 L200,14 L200,42 L0,42 Z" fill="url(#sg1)"/>
+            <path d="M0,38 L25,30 L50,34 L75,20 L100,26 L125,16 L150,22 L175,10 L200,14" stroke="#818cf8" stroke-width="2" fill="none"/>
+          </svg>
+        </div>
+
+        <!-- Revenue -->
+        <div class="card s4">
+          <div class="clabel">Chiffre d'affaires ce mois</div>
+          <div class="bnum">€12 480</div>
+          <div class="trend">▲ +18% vs mois dernier</div>
+          <svg class="spark" viewBox="0 0 200 42" preserveAspectRatio="none">
+            <defs><linearGradient id="sg2" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stop-color="#10b981" stop-opacity=".4"/>
+              <stop offset="100%" stop-color="#10b981" stop-opacity="0"/>
+            </linearGradient></defs>
+            <path d="M0,32 L25,28 L50,35 L75,24 L100,20 L125,22 L150,11 L175,15 L200,5 L200,42 L0,42 Z" fill="url(#sg2)"/>
+            <path d="M0,32 L25,28 L50,35 L75,24 L100,20 L125,22 L150,11 L175,15 L200,5" stroke="#10b981" stroke-width="2" fill="none"/>
+          </svg>
+        </div>
+
+        <!-- Quick access -->
+        <div class="card s12">
+          <div class="chead">
+            <span class="ctitle">Accès rapide</span>
+            <span style="color:var(--muted);font-size:.8rem">9 modules · adaptés à votre poste</span>
+          </div>
+          <div class="qtgrid">
+            <div class="qt cur"><span class="qi">📊</span><span class="ql">Tableau de bord</span></div>
+            <div class="qt"><span class="qi">🗓️</span><span class="ql">Planning</span></div>
+            <div class="qt"><span class="qi">👥</span><span class="ql">Équipe</span></div>
+            <div class="qt"><span class="qi">📋</span><span class="ql">Demandes</span></div>
+            <div class="qt"><span class="qi">📍</span><span class="ql">Lieux</span></div>
+            <div class="qt"><span class="qi">💰</span><span class="ql">Comptabilité</span></div>
+            <div class="qt"><span class="qi">💼</span><span class="ql">Salaires</span></div>
+            <div class="qt"><span class="qi">🎟️</span><span class="ql">Calculator</span></div>
+            <div class="qt"><span class="qi">⚙️</span><span class="ql">Paramètres</span></div>
+          </div>
+        </div>
+
+        <!-- Events -->
+        <div class="card s6">
+          <div class="chead"><span class="ctitle">📅 Prochains événements</span><a class="lmore">Planning complet →</a></div>
+          <div style="display:grid;gap:.6rem">
+            <div class="evrow"><div class="evd"><div class="evd-day">30</div><div class="evd-mon">Mai</div></div><div><div class="evname">Wine tasting</div><div class="evsub">La Cave · 19:00 · 3 membres</div></div><div class="evg">24 invités</div></div>
+            <div class="evrow"><div class="evd"><div class="evd-day">02</div><div class="evd-mon">Juin</div></div><div><div class="evname">Cooking workshop</div><div class="evsub">Atelier · 18:30 · 2 membres</div></div><div class="evg">18 invités</div></div>
+            <div class="evrow"><div class="evd"><div class="evd-day">07</div><div class="evd-mon">Juin</div></div><div><div class="evname">Speed dating</div><div class="evsub">Le Loft · 20:00 · 4 membres</div></div><div class="evg">32 invités</div></div>
+          </div>
+        </div>
+
+        <!-- Activity -->
+        <div class="card s6">
+          <div class="chead"><span class="ctitle">⚡ Activité de l'équipe</span><a class="lmore">Tout voir →</a></div>
+          <div>
+            <div class="arow"><span class="adot"></span><span><strong>Julien</strong> s'est positionné sur Wine tasting (30/05)</span><span class="atime">12m</span></div>
+            <div class="arow"><span class="adot g"></span><span>Facture payée — <strong>ACME · €1 240</strong></span><span class="atime">1h</span></div>
+            <div class="arow"><span class="adot a"></span><span><strong>Marie</strong> a soumis sa disponibilité juin</span><span class="atime">3h</span></div>
+            <div class="arow"><span class="adot r"></span><span>Salaires Mai validés par le comptable</span><span class="atime">hier</span></div>
+          </div>
+        </div>
+
+        <!-- Priority -->
+        <div class="card s12">
+          <div class="chead"><span class="ctitle">🎯 À traiter en priorité</span><a class="lmore">Tout voir →</a></div>
+          <div style="display:grid;gap:.55rem">
+            <div class="prow"><span class="pid">#REQ-042</span><span>Valider le catering pour l'événement du 30/05</span><span class="pill p-urg">Urgent</span><span class="page">2 jours</span></div>
+            <div class="prow"><span class="pid">#REQ-039</span><span>Confirmer la venue pour Speed Dating du 07/06</span><span class="pill p-urg">Urgent</span><span class="page">5 jours</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ LOCATIONS ══════════ -->
+    <div class="pg" id="pg-locations">
+      <header class="topbar">
+        <div class="tsearch">🔍 <span>Rechercher un lieu…</span></div>
+        <div class="tactions">
+          <div class="iBtn">🔔<span class="bdot"></span></div>
+          <div class="uchip"><div class="av">S</div><div><div class="uname">Sébastien</div><div class="urole">Fondateur</div></div><span class="chev">▾</span></div>
+        </div>
+      </header>
+      <div class="sh"><p class="ew">Hub · Opérations</p><h1>Lieux partenaires</h1><p>Venues accueillant les événements Crush — capacité, adéquation et statut du pipeline.</p></div>
+      <div class="mrow3">
+        <div class="mc"><div class="mlabel">Venues partenaires</div><div class="mval">08</div></div>
+        <div class="mc"><div class="mlabel">Partenaires actifs</div><div class="mval">03</div><div class="mtrend">▲ +1 ce mois</div></div>
+        <div class="mc"><div class="mlabel">Pipeline</div><div class="mval">04</div></div>
+      </div>
+      <div class="card">
+        <div class="chead"><span class="ctitle">Venues partenaires</span><span style="color:var(--muted);font-size:.8rem">8 venues · cliquez pour les détails</span></div>
+        <div style="display:grid;gap:.55rem">
+          <div class="lrow"><div class="lname"><strong>La Cave à Vins</strong><span>12 Rue du Vin, Luxembourg</span></div><span class="pill p-act">Active</span><span style="font-size:.82rem;color:var(--muted)">Capacité : 80</span><div class="lmeta">Wine tasting · Dîner</div><span style="color:var(--muted-2)">›</span></div>
+          <div class="lrow"><div class="lname"><strong>Le Loft Urbain</strong><span>5 Place d'Armes, Luxembourg</span></div><span class="pill p-act">Active</span><span style="font-size:.82rem;color:var(--muted)">Capacité : 120</span><div class="lmeta">Speed dating · Cocktail</div><span style="color:var(--muted-2)">›</span></div>
+          <div class="lrow"><div class="lname"><strong>Atelier Gourmand</strong><span>8 Rue des Artisans, Esch</span></div><span class="pill p-neg">Négociation</span><span style="font-size:.82rem;color:var(--muted)">Capacité : 40</span><div class="lmeta">Cooking · Workshop</div><span style="color:var(--muted-2)">›</span></div>
+          <div class="lrow"><div class="lname"><strong>Rooftop Sky Bar</strong><span>22 Avenue du Rock'n'Roll, Belval</span></div><span class="pill p-pros">Prospect</span><span style="font-size:.82rem;color:var(--muted)">Capacité : 200</span><div class="lmeta">Cocktail · Événement</div><span style="color:var(--muted-2)">›</span></div>
+          <div class="lrow" style="opacity:.5"><div class="lname"><strong>Café des Artistes</strong><span>3 Rue Wiltheim, Diekirch</span></div><span class="pill p-pause">En pause</span><span style="font-size:.82rem;color:var(--muted)">Capacité : 60</span><div class="lmeta">Dîner · Dégustation</div><span style="color:var(--muted-2)">›</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ ACCOUNTING ══════════ -->
+    <div class="pg" id="pg-accounting">
+      <header class="topbar">
+        <div class="tsearch">🔍 <span>Rechercher une facture, un client…</span></div>
+        <div class="tactions">
+          <div class="iBtn">🔔<span class="bdot"></span></div>
+          <div class="uchip"><div class="av">S</div><div><div class="uname">Sébastien</div><div class="urole">Fondateur</div></div><span class="chev">▾</span></div>
+        </div>
+      </header>
+      <div class="sh"><p class="ew">Hub · Finances</p><h1>Comptabilité</h1><p>Paiements reçus, à effectuer, salaires et rentabilité des événements.</p></div>
+      <div class="mrow">
+        <div class="mc"><div class="kicobox ki-d">📈</div><div class="mlabel">Reçu ce mois</div><div class="mval">€18 240</div><div class="mtrend">▲ +12%</div></div>
+        <div class="mc"><div class="kicobox ki-u">📉</div><div class="mlabel">À payer</div><div class="mval">€6 800</div><div class="mtrend neg">3 factures</div></div>
+        <div class="mc"><div class="kicobox ki-a">👥</div><div class="mlabel">Masse salariale</div><div class="mval">€9 400</div><div class="mtrend n">stable</div></div>
+        <div class="mc"><div class="kicobox ki-n">💹</div><div class="mlabel">Marge nette</div><div class="mval">€2 040</div><div class="mtrend">▲ +8%</div></div>
+      </div>
+      <div class="card">
+        <div class="chead">
+          <span class="ctitle">💳 Paiements reçus <span style="padding:.12rem .5rem;background:rgba(99,102,241,.18);color:var(--indigo-2);border-radius:999px;font-size:.74rem;margin-left:.35rem">5</span></span>
+          <button class="btn sec sm">⬇ Exporter CSV</button>
+        </div>
+        <div class="twrap">
+          <table>
+            <thead><tr><th>Client</th><th>Événement</th><th>Montant</th><th>Méthode</th><th>Date</th><th>Statut</th></tr></thead>
+            <tbody>
+              <tr><td><strong>ACME Corp</strong></td><td>Wine Tasting — 12/05</td><td><strong>€1 240</strong></td><td><span class="mchip">Virement</span></td><td style="color:var(--muted)">15/05/2026</td><td><span class="pill p-paid">Payé</span></td></tr>
+              <tr><td><strong>Nexus SRL</strong></td><td>Speed Dating — 18/05</td><td><strong>€2 800</strong></td><td><span class="mchip">Carte</span></td><td style="color:var(--muted)">20/05/2026</td><td><span class="pill p-paid">Payé</span></td></tr>
+              <tr class="ov"><td><strong>TechStart</strong></td><td>Workshop — 05/05</td><td><strong>€960</strong></td><td><span class="mchip">Virement</span></td><td style="color:var(--muted)">30/04/2026</td><td><span class="pill p-over">En retard</span></td></tr>
+              <tr><td><strong>LuxEvents</strong></td><td>Cocktail — 22/05</td><td><strong>€3 200</strong></td><td><span class="mchip">Espèces</span></td><td style="color:var(--muted)">25/05/2026</td><td><span class="pill p-pend">En attente</span></td></tr>
+            </tbody>
+            <tfoot><tr><td colspan="2" style="color:var(--muted);font-size:.8rem">Total</td><td><strong>€18 240</strong></td><td colspan="3"></td></tr></tfoot>
+          </table>
+        </div>
+      </div>
+      <div class="two2">
+        <div class="card">
+          <div class="chead"><span class="ctitle">🧾 Récap TVA</span></div>
+          <div style="display:grid;gap:.45rem;margin-top:.3rem">
+            <div class="tvarow"><div>TVA collectée<div style="font-size:.72rem;color:var(--muted)">17% sur les ventes</div></div><strong>€3 100</strong></div>
+            <div class="tvarow"><div>TVA déductible<div style="font-size:.72rem;color:var(--muted)">Achats & frais</div></div><strong>€1 156</strong></div>
+            <div class="tvarow tnet"><div>TVA nette à reverser</div><strong>€1 944</strong></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="chead"><span class="ctitle">📅 Prochaines échéances</span></div>
+          <div style="display:grid;gap:.5rem;margin-top:.3rem">
+            <div class="tlitem"><div class="tldate">01/06/2026</div><div><div class="tltitle">Salaires Mai</div><div class="tldesc">€9 400 · 6 employés</div></div></div>
+            <div class="tlitem"><div class="tldate">15/06/2026</div><div><div class="tltitle">Fournisseur Traiteur</div><div class="tldesc">€1 200 · Facture #INV-088</div></div></div>
+            <div class="tlitem"><div class="tldate">30/06/2026</div><div><div class="tltitle">Déclaration TVA</div><div class="tldesc">€1 944 à reverser</div></div></div>
+          </div>
+        </div>
+      </div>
+      <!-- Payroll -->
+      <div class="card">
+        <div class="chead"><span class="ctitle">💼 Salaires — Mai 2026</span></div>
+        <div class="twrap">
+          <table>
+            <thead><tr><th>Employé</th><th>Rôle</th><th>Brut</th><th>Net</th><th>Charges</th><th>Répartition</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Sébastien</strong></td><td style="color:var(--muted)">Fondateur</td><td>€3 200</td><td style="color:#6ee7b7"><strong>€2 080</strong></td><td style="color:#fcd34d">€1 120</td><td><div class="salbar"><div class="sbn" style="width:65%"></div><div class="sbc" style="width:35%"></div></div></td></tr>
+              <tr><td><strong>Wesley</strong></td><td style="color:var(--muted)">Co-fondateur</td><td>€2 800</td><td style="color:#6ee7b7"><strong>€1 820</strong></td><td style="color:#fcd34d">€980</td><td><div class="salbar"><div class="sbn" style="width:65%"></div><div class="sbc" style="width:35%"></div></div></td></tr>
+              <tr><td><strong>Julien</strong></td><td style="color:var(--muted)">Employé</td><td>€1 800</td><td style="color:#6ee7b7"><strong>€1 170</strong></td><td style="color:#fcd34d">€630</td><td><div class="salbar"><div class="sbn" style="width:65%"></div><div class="sbc" style="width:35%"></div></div></td></tr>
+              <tr><td><strong>Marie</strong></td><td style="color:var(--muted)">Employée</td><td>€1 600</td><td style="color:#6ee7b7"><strong>€1 040</strong></td><td style="color:#fcd34d">€560</td><td><div class="salbar"><div class="sbn" style="width:65%"></div><div class="sbc" style="width:35%"></div></div></td></tr>
+            </tbody>
+            <tfoot><tr><td colspan="2" style="color:var(--muted);font-size:.8rem">Total</td><td><strong>€9 400</strong></td><td style="color:#6ee7b7"><strong>€6 110</strong></td><td style="color:#fcd34d"><strong>€3 290</strong></td><td></td></tr></tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ REQUESTS ══════════ -->
+    <div class="pg" id="pg-requests">
+      <header class="topbar">
+        <div class="tsearch">🔍 <span>Rechercher une demande…</span></div>
+        <div class="tactions">
+          <div class="iBtn">🔔<span class="bdot"></span></div>
+          <div class="uchip"><div class="av">S</div><div><div class="uname">Sébastien</div><div class="urole">Fondateur</div></div><span class="chev">▾</span></div>
+        </div>
+      </header>
+      <div class="sh"><p class="ew">Hub · Pilotage</p><h1>Demandes</h1><p>Gérez les demandes clients et soumettez de nouvelles requêtes.</p></div>
+      <div class="two1">
+        <div class="card">
+          <div class="chead"><span class="ctitle">Nouvelle demande</span></div>
+          <div style="display:grid;gap:.8rem">
+            <div class="ff"><label>Sujet</label><input class="fi" type="text" placeholder="Ex : Réservation venue pour juin…"></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:.7rem">
+              <div class="ff"><label>Catégorie</label><select class="fi"><option>Événement</option><option>Venue</option><option>Finance</option><option>RH</option></select></div>
+              <div class="ff"><label>Priorité</label><select class="fi"><option>Haute</option><option>Moyenne</option><option>Basse</option></select></div>
+            </div>
+            <div class="ff"><label>Message</label><textarea class="fi" rows="4" placeholder="Décrivez votre demande…"></textarea></div>
+            <button class="btn">Soumettre la demande →</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="chead"><span class="ctitle">Demandes récentes <span style="padding:.12rem .5rem;background:rgba(99,102,241,.18);color:var(--indigo-2);border-radius:999px;font-size:.74rem;margin-left:.35rem">12</span></span></div>
+          <div class="twrap">
+            <table>
+              <thead><tr><th>Sujet</th><th>Catégorie</th><th>Priorité</th><th>Statut</th></tr></thead>
+              <tbody>
+                <tr><td><strong>Résa venue 30/05</strong></td><td style="color:var(--muted)">Venue</td><td><span class="pill p-high">Haute</span></td><td><span class="pill p-pend">En cours</span></td></tr>
+                <tr><td><strong>Devis traiteur juin</strong></td><td style="color:var(--muted)">Événement</td><td><span class="pill p-med">Moyenne</span></td><td><span class="pill p-sched">Planifié</span></td></tr>
+                <tr><td><strong>Contrat Julien</strong></td><td style="color:var(--muted)">RH</td><td><span class="pill p-low">Basse</span></td><td><span class="pill p-paid">Résolu</span></td></tr>
+                <tr><td><strong>Facture ACME</strong></td><td style="color:var(--muted)">Finance</td><td><span class="pill p-high">Haute</span></td><td><span class="pill p-pend">En cours</span></td></tr>
+                <tr><td><strong>Planning juillet</strong></td><td style="color:var(--muted)">Équipe</td><td><span class="pill p-med">Moyenne</span></td><td><span class="pill p-sched">Planifié</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ TEAM ══════════ -->
+    <div class="pg" id="pg-team">
+      <header class="topbar">
+        <div class="tsearch">🔍 <span>Rechercher un membre…</span></div>
+        <div class="tactions">
+          <div class="iBtn">🔔<span class="bdot"></span></div>
+          <div class="uchip"><div class="av">S</div><div><div class="uname">Sébastien</div><div class="urole">Fondateur</div></div><span class="chev">▾</span></div>
+        </div>
+      </header>
+      <div class="sh"><p class="ew">Hub · Pilotage</p><h1>Équipe</h1><p>Annuaire de l'équipe Crush.lu — rôles, présence et statistiques par membre.</p></div>
+      <div class="auto3">
+        <div class="tcard"><div class="tav" style="background:linear-gradient(135deg,#6366f1,#ec4899)">S</div><div style="font-size:.92rem;font-weight:700">Sébastien</div><div style="font-size:.78rem;color:var(--muted);margin-top:.15rem">🌟 Fondateur</div><div class="tsgrid"><div class="tsc"><div class="tsn">42</div><div class="tsl">Événements</div></div><div class="tsc"><div class="tsn">96%</div><div class="tsl">Présence</div></div></div></div>
+        <div class="tcard"><div class="tav" style="background:linear-gradient(135deg,#06b6d4,#6366f1)">W</div><div style="font-size:.92rem;font-weight:700">Wesley</div><div style="font-size:.78rem;color:var(--muted);margin-top:.15rem">✨ Co-fondateur</div><div class="tsgrid"><div class="tsc"><div class="tsn">38</div><div class="tsl">Événements</div></div><div class="tsc"><div class="tsn">91%</div><div class="tsl">Présence</div></div></div></div>
+        <div class="tcard"><div class="tav" style="background:linear-gradient(135deg,#10b981,#06b6d4)">C</div><div style="font-size:.92rem;font-weight:700">Claire</div><div style="font-size:.78rem;color:var(--muted);margin-top:.15rem">📊 Comptable</div><div class="tsgrid"><div class="tsc"><div class="tsn">—</div><div class="tsl">Événements</div></div><div class="tsc"><div class="tsn">100%</div><div class="tsl">Présence</div></div></div></div>
+        <div class="tcard"><div class="tav" style="background:linear-gradient(135deg,#f59e0b,#f43f5e)">J</div><div style="font-size:.92rem;font-weight:700">Julien</div><div style="font-size:.78rem;color:var(--muted);margin-top:.15rem">👤 Employé</div><div class="tsgrid"><div class="tsc"><div class="tsn">28</div><div class="tsl">Événements</div></div><div class="tsc"><div class="tsn">84%</div><div class="tsl">Présence</div></div></div></div>
+        <div class="tcard"><div class="tav" style="background:linear-gradient(135deg,#ec4899,#f59e0b)">M</div><div style="font-size:.92rem;font-weight:700">Marie</div><div style="font-size:.78rem;color:var(--muted);margin-top:.15rem">👤 Employée</div><div class="tsgrid"><div class="tsc"><div class="tsn">24</div><div class="tsl">Événements</div></div><div class="tsc"><div class="tsn">88%</div><div class="tsl">Présence</div></div></div></div>
+        <div class="tcard" style="border:1px dashed var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;min-height:155px"><div style="text-align:center;color:var(--muted)"><div style="font-size:1.6rem;margin-bottom:.35rem">+</div><div style="font-size:.82rem;font-weight:600">Inviter un membre</div></div></div>
+      </div>
+    </div>
+
+    <!-- ══════════ PLANNING ══════════ -->
+    <div class="pg" id="pg-planning">
+      <header class="topbar">
+        <div class="tsearch">🔍 <span>Rechercher un shift…</span></div>
+        <div class="tactions">
+          <div class="iBtn">🔔<span class="bdot"></span></div>
+          <div class="uchip"><div class="av">S</div><div><div class="uname">Sébastien</div><div class="urole">Fondateur</div></div><span class="chev">▾</span></div>
+        </div>
+      </header>
+      <div class="sh"><p class="ew">Hub · Pilotage</p><h1>Planning</h1><p>Shifts hebdomadaires, congés et soumission de disponibilités de l'équipe.</p></div>
+      <div class="mrow3">
+        <div class="mc"><div class="mlabel">Événements ce mois</div><div class="mval">08</div></div>
+        <div class="mc"><div class="mlabel">Membres mobilisés</div><div class="mval">06</div></div>
+        <div class="mc"><div class="mlabel">Dispo. en attente</div><div class="mval">03</div><div class="mtrend neg">À valider</div></div>
+      </div>
+      <div class="two2">
+        <div class="card">
+          <div class="chead"><span class="ctitle">🗓️ Événements à venir</span><span style="color:var(--muted);font-size:.8rem">Semaine 23</span></div>
+          <div style="display:grid;gap:.55rem">
+            <div class="srow"><div class="sdate"><div class="sdaten">30</div><div class="sdated">Mai</div></div><div><div class="sname">Wine tasting — La Cave</div><div class="ssub">Sébastien, Julien, Marie</div></div><div class="stime">19:00–23:00</div><span class="pill p-act">Confirmé</span></div>
+            <div class="srow"><div class="sdate"><div class="sdaten">02</div><div class="sdated">Juin</div></div><div><div class="sname">Cooking workshop — Atelier</div><div class="ssub">Wesley, Julien</div></div><div class="stime">18:30–22:00</div><span class="pill p-pend">En attente</span></div>
+            <div class="srow"><div class="sdate"><div class="sdaten">07</div><div class="sdated">Juin</div></div><div><div class="sname">Speed dating — Le Loft</div><div class="ssub">Sébastien, Wesley, Julien, Marie</div></div><div class="stime">20:00–00:00</div><span class="pill p-act">Confirmé</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="chead"><span class="ctitle">✋ Disponibilités en attente</span><a class="lmore">Tout gérer →</a></div>
+          <div style="display:grid;gap:.55rem">
+            <div class="prow" style="grid-template-columns:80px 1fr auto"><span class="pid">Julien</span><span>Disponible juin, sauf 15–22</span><span class="pill p-pend">À valider</span></div>
+            <div class="prow" style="grid-template-columns:80px 1fr auto"><span class="pid">Marie</span><span>Disponible — toutes les dates</span><span class="pill p-paid">Validé</span></div>
+            <div class="prow" style="grid-template-columns:80px 1fr auto"><span class="pid">Lucas</span><span>Indispo. 1–14 juin (vacances)</span><span class="pill p-pend">À valider</span></div>
+          </div>
+        </div>
+      </div>
+      <!-- Activity feed in planning -->
+      <div class="card">
+        <div class="chead"><span class="ctitle">⚡ Activité planning récente</span><a class="lmore">Tout voir →</a></div>
+        <div>
+          <div class="arow"><span class="adot"></span><span><strong>Julien</strong> s'est positionné sur Wine tasting (30/05)</span><span class="atime">il y a 12m</span></div>
+          <div class="arow"><span class="adot a"></span><span><strong>Marie</strong> a soumis sa disponibilité pour juin</span><span class="atime">il y a 3h</span></div>
+          <div class="arow"><span class="adot g"></span><span>Shift du 07/06 (Speed Dating) confirmé par Sébastien</span><span class="atime">hier</span></div>
+          <div class="arow"><span class="adot c"></span><span><strong>Lucas</strong> a déclaré une absence du 1 au 14 juin</span><span class="atime">hier</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ SETTINGS ══════════ -->
+    <div class="pg" id="pg-settings">
+      <header class="topbar">
+        <div class="tsearch">🔍 <span>Rechercher…</span></div>
+        <div class="tactions">
+          <div class="iBtn">🔔<span class="bdot"></span></div>
+          <div class="uchip"><div class="av">S</div><div><div class="uname">Sébastien</div><div class="urole">Fondateur</div></div><span class="chev">▾</span></div>
+        </div>
+      </header>
+      <div class="sh"><p class="ew">Compte</p><h1>Paramètres</h1><p>Gérez votre profil, préférences et intégrations.</p></div>
+      <div class="two2">
+        <div class="card">
+          <div class="chead"><span class="ctitle">Profil</span></div>
+          <div style="display:grid;gap:.8rem">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:.7rem">
+              <div class="ff"><label>Prénom</label><input class="fi" value="Sébastien"></div>
+              <div class="ff"><label>Nom</label><input class="fi" value="Martin"></div>
+            </div>
+            <div class="ff"><label>Email professionnel</label><input class="fi" value="sebastien@crush.lu"></div>
+            <div class="ff"><label>Rôle</label><input class="fi" value="Fondateur" readonly></div>
+            <div class="ff"><label>Téléphone</label><input class="fi" placeholder="+352 …"></div>
+            <button class="btn">Enregistrer les modifications</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="chead"><span class="ctitle">Intégrations & connexions</span></div>
+          <div style="display:grid;gap:.5rem">
+            <div class="chkrow"><div class="chkc chk-y">✓</div><div><div style="font-size:.88rem;font-weight:600">API Crush.lu connectée</div><div style="font-size:.76rem;color:var(--muted)">Token valide · synchro il y a 2 min</div></div></div>
+            <div class="chkrow"><div class="chkc chk-y">✓</div><div><div style="font-size:.88rem;font-weight:600">SSO Crush.lu activé</div><div style="font-size:.76rem;color:var(--muted)">Connexion unique via allauth</div></div></div>
+            <div class="chkrow"><div class="chkc chk-n">○</div><div><div style="font-size:.88rem;font-weight:600">WhatsApp Business</div><div style="font-size:.76rem;color:var(--muted)">Non configuré — cliquez pour connecter</div></div></div>
+            <div class="chkrow"><div class="chkc chk-n">○</div><div><div style="font-size:.88rem;font-weight:600">Notifications push</div><div style="font-size:.76rem;color:var(--muted)">Non activées</div></div></div>
+            <div class="chkrow"><div class="chkc chk-n">○</div><div><div style="font-size:.88rem;font-weight:600">Export comptable automatique</div><div style="font-size:.76rem;color:var(--muted)">Connexion logiciel comptable</div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ RESOURCES ══════════ -->
+    <div class="pg" id="pg-resources">
+      <header class="topbar">
+        <div class="tsearch">🔍 <span>Rechercher une ressource…</span></div>
+        <div class="tactions">
+          <div class="iBtn">🔔<span class="bdot"></span></div>
+          <div class="uchip"><div class="av">S</div><div><div class="uname">Sébastien</div><div class="urole">Fondateur</div></div><span class="chev">▾</span></div>
+        </div>
+      </header>
+      <div class="sh"><p class="ew">Hub · Opérations</p><h1>Ressources</h1><p>Guides, documents de formation et matériel de projet partagés par l'équipe.</p></div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.9rem">
+        <div class="card"><div class="rtype">Guide</div><div class="rtitle">Onboarding employé v2</div><div class="rdesc">Procédures d'accueil, accès et premières missions pour les nouveaux membres.</div><div style="margin-top:.9rem"><button class="btn sm">📄 Ouvrir</button></div></div>
+        <div class="card"><div class="rtype">Template</div><div class="rtitle">Contrat partenariat venue</div><div class="rdesc">Modèle de contrat pour l'établissement de nouvelles collaborations avec des venues.</div><div style="margin-top:.9rem"><button class="btn sm">📄 Ouvrir</button></div></div>
+        <div class="card"><div class="rtype">Document</div><div class="rtitle">Procédures comptables</div><div class="rdesc">Facturation, déclarations TVA et clôtures mensuelles selon les standards Crush.lu.</div><div style="margin-top:.9rem"><button class="btn sm">📄 Ouvrir</button></div></div>
+        <div class="card"><div class="rtype">Présentation</div><div class="rtitle">Pitch deck Q2 2026</div><div class="rdesc">Métriques de croissance et projections pour les investisseurs, deuxième trimestre 2026.</div><div style="margin-top:.9rem"><button class="btn sm">📄 Ouvrir</button></div></div>
+        <div class="card"><div class="rtype">Checklist</div><div class="rtitle">Setup événement</div><div class="rdesc">Liste de vérification complète pour la préparation et le déroulement d'un événement.</div><div style="margin-top:.9rem"><button class="btn sm">📄 Ouvrir</button></div></div>
+        <div class="card" style="border:1px dashed var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;min-height:140px"><div style="text-align:center;color:var(--muted)"><div style="font-size:1.6rem;margin-bottom:.35rem">+</div><div style="font-size:.82rem;font-weight:600">Ajouter une ressource</div></div></div>
+      </div>
+    </div>
+
+  </div><!-- /area -->
+</div><!-- /shell -->
+
+<script>
+function go(id, el, fromSidebar) {
+  document.querySelectorAll('.pg').forEach(p => p.classList.remove('on'));
+  document.getElementById('pg-' + id).classList.add('on');
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
+  document.querySelectorAll('.nl').forEach(n => n.classList.remove('on'));
+  if (fromSidebar) {
+    const nb = document.getElementById('nl-' + id);
+    if (nb) nb.classList.add('on');
+    document.querySelectorAll('.tab').forEach(t => {
+      if (t.getAttribute('onclick') && t.getAttribute('onclick').includes("'"+id+"'")) t.classList.add('on');
+    });
+  } else {
+    el.classList.add('on');
+    const nb = document.getElementById('nl-' + id);
+    if (nb) nb.classList.add('on');
+  }
+}
+</script>
+</body>
+</html>
