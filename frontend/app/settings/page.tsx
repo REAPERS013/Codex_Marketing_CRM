@@ -5,6 +5,14 @@ import { SectionHeader } from "@/components/section-header";
 import { StatusBanner } from "@/components/status-banner";
 import { useHubData } from "@/lib/hub-provider";
 
+const INTEGRATIONS = [
+  { done: true,  label: "API Crush.lu connectée",         detail: "Token valide · dernière synchro il y a 2 min" },
+  { done: true,  label: "SSO Crush.lu activé",            detail: "Connexion unique via allauth" },
+  { done: false, label: "WhatsApp Business",              detail: "Non configuré — cliquez pour connecter" },
+  { done: false, label: "Notifications push",             detail: "Non activées" },
+  { done: false, label: "Export comptable automatique",   detail: "Connexion logiciel comptable" },
+];
+
 export default function SettingsPage() {
   const { customer } = useHubData();
 
@@ -12,44 +20,56 @@ export default function SettingsPage() {
     <main className="page">
       <StatusBanner />
       <SectionHeader
-        eyebrow="Profile settings"
-        title="Account details now, authentication integration later."
-        description="This page is intentionally shaped to accept Django-backed profile and permission data."
+        eyebrow="Compte"
+        title="Paramètres."
+        description="Gérez votre profil, préférences et intégrations."
       />
 
       <div className="two-up">
-        <Panel title="Primary contact" description="Basic customer identity fields.">
+        <Panel title="Profil" description="Informations de votre compte Crush.lu.">
           <form className="app-form">
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+              <label>
+                Prénom
+                <input type="text" defaultValue={customer.primaryContact.split(" ")[0] || "Sébastien"} />
+              </label>
+              <label>
+                Nom
+                <input type="text" defaultValue={customer.primaryContact.split(" ")[1] || "Martin"} />
+              </label>
+            </div>
             <label>
-              Full name
-              <input type="text" defaultValue={customer.primaryContact} />
+              Email professionnel
+              <input type="email" defaultValue={customer.email || "sebastien@crush.lu"} />
             </label>
             <label>
-              Company
-              <input type="text" defaultValue={customer.organization} />
+              Organisation
+              <input type="text" defaultValue={customer.organization || "Crush.lu"} />
             </label>
             <label>
-              Email
-              <input type="email" defaultValue={customer.email} />
-            </label>
-            <label>
-              Phone
-              <input type="text" defaultValue={customer.phone} />
+              Téléphone
+              <input type="text" defaultValue={customer.phone || ""} placeholder="+352 …" />
             </label>
             <button type="button" className="button">
-              Save changes
+              Enregistrer les modifications
             </button>
           </form>
         </Panel>
 
-        <Panel title="Integration readiness" description="These are the frontend contracts to preserve when Django is added.">
-          <ul className="stack-list">
-            <li>GET `/hub/me` for account context</li>
-            <li>GET `/hub/requests` for request listing</li>
-            <li>POST `/hub/requests` for new submissions</li>
-            <li>GET `/hub/resources` for shared documents</li>
-            <li>PATCH `/hub/me` for settings updates</li>
-          </ul>
+        <Panel title="Intégrations & connexions" description="État des connexions avec les services externes.">
+          <div className="check-list">
+            {INTEGRATIONS.map((item) => (
+              <div key={item.label} className="check-item">
+                <div className={`check-circle ${item.done ? "done" : "todo"}`}>
+                  {item.done ? "✓" : "○"}
+                </div>
+                <div>
+                  <div style={{ fontSize: "0.9rem", fontWeight: 600 }}>{item.label}</div>
+                  <div style={{ fontSize: "0.78rem", color: "var(--muted)", marginTop: "0.1rem" }}>{item.detail}</div>
+                </div>
+              </div>
+            ))}
+          </div>
         </Panel>
       </div>
     </main>

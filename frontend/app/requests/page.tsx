@@ -10,7 +10,7 @@ export default function RequestsPage() {
   const { requests } = useHubData();
   const [draftSaved, setDraftSaved] = useState(false);
 
-  function handleDraftSave(event: FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setDraftSaved(true);
   }
@@ -19,69 +19,70 @@ export default function RequestsPage() {
     <main className="page">
       <StatusBanner />
       <SectionHeader
-        eyebrow="Support and service"
-        title="Customer requests should feel clear, traceable, and calm."
-        description="This page already behaves like an SPA form surface and can later POST directly to your backend."
+        eyebrow="Hub · Pilotage"
+        title="Demandes."
+        description="Gérez les demandes clients et soumettez de nouvelles requêtes directement depuis le portail."
       />
 
       <div className="request-layout">
-        <Panel title="Create a new request" description="The current action is local, but the same form shape can post to your API later.">
-          <form className="app-form" onSubmit={handleDraftSave}>
+        <Panel title="Nouvelle demande" description="Soumettez une requête — elle sera transmise à l'équipe Crush.lu.">
+          <form className="app-form" onSubmit={handleSubmit}>
             <label>
-              Subject
-              <input type="text" placeholder="Website update for May campaign" />
+              Sujet
+              <input type="text" placeholder="Ex : Réservation venue pour juin…" />
             </label>
             <label>
-              Category
-              <select defaultValue="project">
-                <option value="project">Project</option>
-                <option value="technical">Technical</option>
-                <option value="billing">Billing</option>
-                <option value="general">General</option>
+              Catégorie
+              <select defaultValue="event">
+                <option value="event">Événement</option>
+                <option value="venue">Venue</option>
+                <option value="finance">Finance</option>
+                <option value="hr">Ressources humaines</option>
+                <option value="general">Général</option>
               </select>
             </label>
             <label>
-              Priority
+              Priorité
               <select defaultValue="medium">
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
+                <option value="low">Basse</option>
+                <option value="medium">Moyenne</option>
+                <option value="high">Haute</option>
               </select>
             </label>
             <label>
               Message
-              <textarea rows={5} placeholder="Describe the change, context, and deadline." />
+              <textarea rows={5} placeholder="Décrivez votre demande, le contexte et l'échéance." />
             </label>
             <button type="submit" className="button">
-              Save draft
+              Soumettre la demande →
             </button>
             {draftSaved ? (
               <p className="form-note">
-                Draft captured locally. Replace this with a `POST /hub/requests`
-                call when the backend is ready.
+                Demande enregistrée. Elle sera envoyée via{" "}
+                <code>POST /hub/requests</code> une fois l&apos;API connectée.
               </p>
             ) : null}
           </form>
         </Panel>
 
-        <Panel title="Existing requests" description="The customer should always understand what is moving and what is waiting.">
+        <Panel title="Demandes récentes" description="Historique de vos demandes en cours et résolues.">
           <div className="table-wrap">
             <table className="table">
               <thead>
                 <tr>
-                  <th>Subject</th>
-                  <th>Category</th>
-                  <th>Priority</th>
-                  <th>Status</th>
+                  <th>Sujet</th>
+                  <th>Catégorie</th>
+                  <th>Priorité</th>
+                  <th>Statut</th>
                 </tr>
               </thead>
               <tbody>
                 {requests.map((request) => (
                   <tr key={request.id}>
-                    <td>{request.subject}</td>
-                    <td>{request.category}</td>
-                    <td>{request.priority}</td>
-                    <td>{request.status}</td>
+                    <td><strong>{request.subject}</strong></td>
+                    <td style={{ color: "var(--muted)" }}>{request.category}</td>
+                    <td><span className={`pill ${request.priority.toLowerCase()}`}>{request.priority}</span></td>
+                    <td><span className={`pill ${request.status.toLowerCase().replace(/\s+/g, "-")}`}>{request.status}</span></td>
                   </tr>
                 ))}
               </tbody>

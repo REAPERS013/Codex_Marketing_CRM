@@ -35,6 +35,7 @@ const navSections: NavSection[] = [
     title: "Compte",
     items: [
       { href: "/settings", label: "Paramètres", icon: "⚙️" },
+      { href: "/legacy",   label: "Version d'origine", icon: "🕰" },
     ],
   },
 ];
@@ -63,13 +64,15 @@ export function Sidebar() {
                   (item.href.includes("?")
                     ? pathname === item.href.split("?")[0]
                     : false);
+                const isLegacy = item.href === "/legacy";
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
                     className={`nav-link${active ? " active" : ""}`}
+                    style={isLegacy ? { opacity: 0.55, fontSize: "0.85rem" } : undefined}
                   >
-                    <span style={{ fontSize: "1.05rem" }}>{item.icon}</span>
+                    <span style={{ fontSize: isLegacy ? "0.95rem" : "1.05rem" }}>{item.icon}</span>
                     <span>{item.label}</span>
                   </Link>
                 );

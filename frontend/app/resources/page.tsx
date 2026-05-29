@@ -12,9 +12,9 @@ export default function ResourcesPage() {
     <main className="page">
       <StatusBanner />
       <SectionHeader
-        eyebrow="Resource center"
-        title="Shared assets, guides, and project references in one place."
-        description="A dedicated customer hub should not make people hunt through emails for every document."
+        eyebrow="Hub · Opérations"
+        title="Ressources."
+        description="Guides, documents de formation et matériel de projet partagés par l'équipe."
       />
 
       <div className="resource-grid">
@@ -22,10 +22,10 @@ export default function ResourcesPage() {
           <Panel key={resource.id} title={resource.title} description={resource.summary}>
             <div className="resource-meta">
               <span className="resource-type">{resource.type}</span>
-              <span>{resource.updatedAt}</span>
+              <span style={{ color: "var(--muted)", fontSize: "0.82rem" }}>{resource.updatedAt}</span>
             </div>
-            <button type="button" className="button secondary">
-              Open resource
+            <button type="button" className="button secondary" style={{ marginTop: "0.6rem" }}>
+              📄 Ouvrir
             </button>
           </Panel>
         ))}

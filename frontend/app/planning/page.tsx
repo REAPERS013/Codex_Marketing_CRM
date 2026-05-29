@@ -2,71 +2,74 @@
 
 import { Panel } from "@/components/panel";
 import { SectionHeader } from "@/components/section-header";
+import { HeroStats } from "@/components/hero-stats";
 
 const DAYS = [
-  { label: "Lun 26", today: false, shifts: [{ type: "off", who: "Off", info: "Repos équipe" }] },
-  { label: "Mar 27", today: false, shifts: [{ type: "work", who: "Marie", info: "14h–18h · Prépa" }] },
+  { label: "Lun 26", today: false, shifts: [{ type: "off",   who: "Off",              info: "Repos équipe" }] },
+  { label: "Mar 27", today: false, shifts: [{ type: "work",  who: "Marie",            info: "14h–18h · Prépa" }] },
   {
-    label: "Mer 28",
-    today: false,
+    label: "Mer 28", today: false,
     shifts: [
       { type: "work", who: "Julien", info: "10h–17h · Office" },
       { type: "free", who: "Claire", info: "10h–14h · Compta" },
     ],
   },
   {
-    label: "Jeu 29 · Aujourd'hui",
-    today: true,
+    label: "Jeu 29 · Aujourd'hui", today: true,
     shifts: [
-      { type: "work", who: "Marie", info: "14h–22h · Briefing" },
+      { type: "work", who: "Marie",  info: "14h–22h · Briefing" },
       { type: "work", who: "Julien", info: "16h–22h · Logistique" },
     ],
   },
   {
-    label: "Ven 30",
-    today: false,
+    label: "Ven 30", today: false,
     shifts: [
-      { type: "event", who: "🍷 Wine tasting", info: "19h–23h · La Cave" },
-      { type: "work", who: "Sébastien · Wesley", info: "19h–23h" },
+      { type: "event", who: "🍷 Wine tasting",      info: "19h–23h · La Cave" },
+      { type: "work",  who: "Sébastien · Wesley",   info: "19h–23h" },
     ],
   },
-  { label: "Sam 31", today: false, shifts: [{ type: "off", who: "—", info: "Aucun shift" }] },
-  { label: "Dim 1", today: false, shifts: [{ type: "off", who: "Off", info: "Repos équipe" }] },
+  { label: "Sam 31", today: false, shifts: [{ type: "off", who: "—",   info: "Aucun shift" }] },
+  { label: "Dim 1",  today: false, shifts: [{ type: "off", who: "Off", info: "Repos équipe" }] },
 ];
 
 const shiftStyle: Record<string, React.CSSProperties> = {
-  work: {
-    background: "rgba(99,102,241,0.18)",
-    borderColor: "rgba(99,102,241,0.4)",
-  },
-  free: {
-    background: "rgba(16,185,129,0.15)",
-    borderColor: "rgba(16,185,129,0.35)",
-  },
-  off: {
-    background: "rgba(255,255,255,0.04)",
-    borderColor: "rgba(255,255,255,0.08)",
-    color: "var(--muted)",
-  },
-  event: {
-    background: "rgba(244,63,94,0.15)",
-    borderColor: "rgba(244,63,94,0.4)",
-  },
+  work:  { background: "rgba(99,102,241,0.18)", borderColor: "rgba(99,102,241,0.4)" },
+  free:  { background: "rgba(16,185,129,0.15)",  borderColor: "rgba(16,185,129,0.35)" },
+  off:   { background: "rgba(255,255,255,0.04)", borderColor: "rgba(255,255,255,0.08)", color: "var(--muted)" },
+  event: { background: "rgba(244,63,94,0.15)",   borderColor: "rgba(244,63,94,0.4)" },
 };
 
+const UPCOMING = [
+  { day: "30", month: "Mai",  name: "Wine tasting",     sub: "La Cave · 19:00 · 3 membres",   time: "19:00–23:00", status: "Confirmé",  cls: "p-act" },
+  { day: "02", month: "Juin", name: "Cooking workshop", sub: "Atelier · 18:30 · 2 membres",   time: "18:30–22:00", status: "En attente", cls: "p-pend" },
+  { day: "07", month: "Juin", name: "Speed dating",     sub: "Le Loft · 20:00 · 4 membres",   time: "20:00–00:00", status: "Confirmé",  cls: "p-act" },
+];
+
+const DISPO = [
+  { who: "Julien", text: "Disponible juin, sauf 15–22",           status: "À valider", cls: "p-pend" },
+  { who: "Marie",  text: "Disponible — toutes les dates proposées", status: "Validé",    cls: "p-paid" },
+  { who: "Lucas",  text: "Indisponible 1–14 juin (vacances)",      status: "À valider", cls: "p-pend" },
+];
+
 export default function PlanningPage() {
+  const metrics = [
+    { label: "Événements ce mois", value: "08" },
+    { label: "Membres mobilisés",  value: "06" },
+    { label: "Dispos en attente",  value: "03" },
+  ];
+
   return (
     <main className="page">
       <SectionHeader
-        eyebrow="🗓️ Planning équipe"
-        title="Planning de la semaine."
-        description="Visualise les disponibilités de chaque membre et attribue les événements à venir."
+        eyebrow="Hub · Pilotage"
+        title="Planning."
+        description="Shifts hebdomadaires, congés et soumission de disponibilités de l'équipe."
       />
 
-      <Panel
-        title="Semaine du 26 mai au 1er juin"
-        description="Glissez-déposez les shifts pour réorganiser."
-      >
+      <HeroStats metrics={metrics} />
+
+      {/* Weekly calendar */}
+      <Panel title="Semaine du 26 mai au 1er juin" description="Visualise les shifts et événements de la semaine.">
         <div
           style={{
             display: "grid",
@@ -111,12 +114,8 @@ export default function PlanningPage() {
                     ...shiftStyle[s.type],
                   }}
                 >
-                  <strong style={{ display: "block", fontSize: "0.78rem" }}>
-                    {s.who}
-                  </strong>
-                  <span style={{ color: "var(--muted)", fontSize: "0.7rem" }}>
-                    {s.info}
-                  </span>
+                  <strong style={{ display: "block", fontSize: "0.78rem" }}>{s.who}</strong>
+                  <span style={{ color: "var(--muted)", fontSize: "0.7rem" }}>{s.info}</span>
                 </div>
               ))}
             </div>
@@ -124,43 +123,47 @@ export default function PlanningPage() {
         </div>
       </Panel>
 
-      <section className="two-up">
-        <Panel
-          title="Demandes de congés"
-          description="À valider ou refuser."
-        >
-          <div className="item-list">
-            <article className="item-card">
-              <div className="item-row">
-                <h3>Julien — du 12 au 16 juin</h3>
-                <span className="pill pending">En attente</span>
+      <div className="two-up">
+        {/* Upcoming events */}
+        <Panel title="📅 Prochains événements" description="Shifts confirmés et en attente de validation.">
+          <div className="shift-feed">
+            {UPCOMING.map((ev) => (
+              <div key={ev.name} className="shift-row">
+                <div className="shift-date">
+                  <div className="shift-date-num">{ev.day}</div>
+                  <div className="shift-date-day">{ev.month}</div>
+                </div>
+                <div>
+                  <div className="shift-name">{ev.name}</div>
+                  <div className="shift-sub">{ev.sub}</div>
+                </div>
+                <div className="shift-time">{ev.time}</div>
+                <span className={`pill ${ev.cls}`}>{ev.status}</span>
               </div>
-              <p>5 jours · Motif: vacances familiales</p>
-            </article>
-            <article className="item-card">
-              <div className="item-row">
-                <h3>Marie — 8 juin</h3>
-                <span className="pill pending">En attente</span>
-              </div>
-              <p>1 jour · Motif: rendez-vous médical</p>
-            </article>
+            ))}
           </div>
         </Panel>
 
-        <Panel
-          title="Mes disponibilités juin"
-          description="Coche les créneaux où tu es libre."
-        >
-          <p style={{ color: "var(--muted)", lineHeight: 1.8 }}>
-            🟢 12 jours marqués disponibles<br />
-            🔴 3 jours indisponibles<br />
-            ⚪ 15 jours à confirmer
-          </p>
-          <button type="button" className="button" style={{ marginTop: "0.8rem" }}>
-            Soumettre mes dispos
+        {/* Availability */}
+        <Panel title="✋ Disponibilités en attente" description="À valider ou refuser avant la prochaine attribution.">
+          <div className="priority-feed">
+            {DISPO.map((d) => (
+              <div
+                key={d.who}
+                className="priority-row"
+                style={{ gridTemplateColumns: "80px 1fr auto" }}
+              >
+                <span className="priority-id">{d.who}</span>
+                <span>{d.text}</span>
+                <span className={`pill ${d.cls}`}>{d.status}</span>
+              </div>
+            ))}
+          </div>
+          <button type="button" className="button" style={{ marginTop: "1rem", width: "100%" }}>
+            Soumettre mes disponibilités
           </button>
         </Panel>
-      </section>
+      </div>
     </main>
   );
 }
