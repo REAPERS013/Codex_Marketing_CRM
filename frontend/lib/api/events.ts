@@ -4,6 +4,7 @@ import {
   EventAvailabilityResponse,
   EventCancellationDetailResponse,
   EventCancellationsResponse,
+  HubEventResponse,
   HubEventsResponse,
 } from "@/lib/api/contracts";
 import {
@@ -13,6 +14,7 @@ import {
   EventCoachAvailability,
   EventCoachRole,
   HubEvent,
+  HubEventDraft,
   SocialEventSuggestion,
 } from "@/lib/types";
 
@@ -45,7 +47,15 @@ export async function fetchEventCancellationDetail(
 // /api/ (cf. CLAUDE.md « API host convention ») :
 //
 //   GET    /hub/events
-//          → { items: HubEvent[] }  — événements publiés sur crush.lu, à venir.
+//          → { items: HubEvent[] }  — événements à venir : ceux publiés sur
+//            crush.lu (origin "crush") et ceux créés depuis le hub ("hub").
+//   POST   /hub/events                body HubEventDraft
+//          → { item: HubEvent }  — création d'un événement interne au hub.
+//   PATCH  /hub/events/:eventId       body Partial<HubEventDraft>
+//          → { item: HubEvent }  — édition d'un événement créé dans le hub.
+//   DELETE /hub/events/:eventId
+//          → 204  — suppression d'un événement créé dans le hub, avec ses
+//            disponibilités. Les événements crush.lu ne sont pas supprimables ici.
 //   GET    /hub/events/availabilities
 //          → { items: EventCoachAvailability[] }  — toutes déclarations, tous events.
 //   POST   /hub/events/:eventId/availability   body { role, note? }
@@ -66,6 +76,23 @@ export async function fetchHubEvents(): Promise<HubEvent[]> {
   if (!getAccessToken()) return [];
   const res = await apiGet<HubEventsResponse>("/hub/events");
   return res.items || [];
+}
+
+export async function createHubEvent(draft: HubEventDraft): Promise<HubEvent> {
+  const res = await apiPost<HubEventResponse>("/hub/events", draft);
+  return res.item;
+}
+
+export async function updateHubEvent(
+  eventId: string,
+  draft: Partial<HubEventDraft>,
+): Promise<HubEvent> {
+  const res = await apiPatch<HubEventResponse>(`/hub/events/${eventId}`, draft);
+  return res.item;
+}
+
+export async function deleteHubEvent(eventId: string): Promise<void> {
+  await apiDelete<void>(`/hub/events/${eventId}`);
 }
 
 export async function fetchEventAvailabilities(): Promise<EventCoachAvailability[]> {
@@ -116,6 +143,7 @@ export function mapSuggestionToHubEvent(
     imageUrl: suggestion.image_url || null,
     eventUrl: suggestion.event_url || null,
     coachesNeeded: DEFAULT_COACHES_NEEDED,
+    origin: "crush",
   };
 }
 

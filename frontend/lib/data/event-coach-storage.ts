@@ -7,6 +7,7 @@ import type {
   EventCoachAvailability,
   EventCoachRole,
   HubEvent,
+  HubEventDraft,
 } from "@/lib/types";
 
 // Repli navigateur utilisé tant que les routes /hub/events* ne sont pas
@@ -16,6 +17,7 @@ import type {
 // et peut être supprimé avec l'état `source === "local"` de la page.
 
 const AVAILABILITY_KEY = "hub_event_coach_availability";
+const EVENTS_KEY = "hub_local_events";
 
 export const DEMO_EVENT_ID = "demo-event";
 
@@ -65,8 +67,61 @@ export function buildDemoEvent(): HubEvent {
     imageUrl: null,
     eventUrl: "https://crush.lu/events/",
     coachesNeeded: DEFAULT_COACHES_NEEDED,
+    origin: "crush",
     isDemo: true,
   };
+}
+
+// Événements créés depuis le hub. En mode local ils vivent dans le navigateur ;
+// dès que POST /hub/events répond, la page passe en "live" et ce store n'est
+// plus lu.
+export function useLocalEvents() {
+  const [events, setEvents] = useState<HubEvent[]>([]);
+
+  useEffect(() => {
+    setEvents(readJson<HubEvent>(EVENTS_KEY));
+  }, []);
+
+  const persist = useCallback((updater: (prev: HubEvent[]) => HubEvent[]) => {
+    setEvents((prev) => {
+      const next = updater(prev);
+      writeJson(EVENTS_KEY, next);
+      return next;
+    });
+  }, []);
+
+  const create = useCallback(
+    (draft: HubEventDraft): HubEvent => {
+      const event: HubEvent = {
+        ...draft,
+        id: makeId("event"),
+        origin: "hub",
+      };
+      persist((prev) => [...prev, event]);
+      return event;
+    },
+    [persist],
+  );
+
+  const update = useCallback(
+    (eventId: string, draft: HubEventDraft) => {
+      persist((prev) =>
+        prev.map((event) =>
+          event.id === eventId ? { ...event, ...draft } : event,
+        ),
+      );
+    },
+    [persist],
+  );
+
+  const remove = useCallback(
+    (eventId: string) => {
+      persist((prev) => prev.filter((event) => event.id !== eventId));
+    },
+    [persist],
+  );
+
+  return { events, create, update, remove };
 }
 
 export function useLocalAvailabilities() {
@@ -157,5 +212,14 @@ export function useLocalAvailabilities() {
     [persist],
   );
 
-  return { availabilities, declare, withdraw, setStatus };
+  // Supprimer un événement doit emporter les disponibilités qui le visaient,
+  // sinon elles restent orphelines dans le navigateur.
+  const dropEvent = useCallback(
+    (eventId: string) => {
+      persist((prev) => prev.filter((item) => item.eventId !== eventId));
+    },
+    [persist],
+  );
+
+  return { availabilities, declare, withdraw, setStatus, dropEvent };
 }

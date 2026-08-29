@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { HeroStats } from "@/components/hero-stats";
 import { Panel } from "@/components/panel";
 import { SectionHeader } from "@/components/section-header";
@@ -9,17 +9,21 @@ import { StatusBanner } from "@/components/status-banner";
 import { getAccessToken } from "@/lib/api/client";
 import {
   DEFAULT_COACHES_NEEDED,
+  createHubEvent,
   declareAvailability,
+  deleteHubEvent,
   fetchEventAvailabilities,
   fetchHubEvents,
   mapSuggestionToHubEvent,
   setAvailabilityStatus,
+  updateHubEvent,
   withdrawAvailability,
 } from "@/lib/api/events";
 import { listUpcomingEvents } from "@/lib/api/social";
 import {
   buildDemoEvent,
   useLocalAvailabilities,
+  useLocalEvents,
 } from "@/lib/data/event-coach-storage";
 import { useHubData } from "@/lib/hub-provider";
 import type {
@@ -27,9 +31,20 @@ import type {
   EventCoachAvailability,
   EventCoachRole,
   HubEvent,
+  HubEventDraft,
 } from "@/lib/types";
 
 const ROLES: EventCoachRole[] = ["Animation", "Accueil", "Photo/Vidéo", "Support"];
+
+// Suggestions de types : le champ reste libre (datalist), rien n'est imposé.
+const EVENT_TYPES = [
+  "Speed dating",
+  "Afterwork",
+  "Atelier",
+  "Soirée à thème",
+  "Sortie",
+  "Blind test",
+];
 
 const dateFmt = new Intl.DateTimeFormat("fr-LU", {
   weekday: "short",
@@ -43,6 +58,52 @@ const formatDate = (iso: string) => {
   const parsed = new Date(iso);
   return Number.isNaN(parsed.getTime()) ? "Date à confirmer" : dateFmt.format(parsed);
 };
+
+// `datetime-local` travaille en heure locale sans fuseau : on convertit dans les
+// deux sens plutôt que de tronquer l'ISO, sinon la saisie se décale d'un fuseau.
+function toInputDateTime(iso: string): string {
+  const parsed = new Date(iso);
+  if (Number.isNaN(parsed.getTime())) return "";
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return `${parsed.getFullYear()}-${pad(parsed.getMonth() + 1)}-${pad(
+    parsed.getDate(),
+  )}T${pad(parsed.getHours())}:${pad(parsed.getMinutes())}`;
+}
+
+type EventForm = {
+  title: string;
+  eventType: string;
+  dateTime: string;
+  location: string;
+  description: string;
+  coachesNeeded: string;
+  imageUrl: string;
+  eventUrl: string;
+};
+
+const EMPTY_FORM: EventForm = {
+  title: "",
+  eventType: "",
+  dateTime: "",
+  location: "",
+  description: "",
+  coachesNeeded: String(DEFAULT_COACHES_NEEDED),
+  imageUrl: "",
+  eventUrl: "",
+};
+
+function formFromEvent(event: HubEvent): EventForm {
+  return {
+    title: event.title,
+    eventType: event.eventType || "",
+    dateTime: toInputDateTime(event.dateTime),
+    location: event.location || "",
+    description: event.description || "",
+    coachesNeeded: String(event.coachesNeeded || DEFAULT_COACHES_NEEDED),
+    imageUrl: event.imageUrl || "",
+    eventUrl: event.eventUrl || "",
+  };
+}
 
 type Notice = { kind: "success" | "error"; text: string };
 
@@ -61,9 +122,10 @@ function statusLabel(status: CoachAvailabilityStatus): string {
 export default function EventCoachesPage() {
   const { customer } = useHubData();
   const local = useLocalAvailabilities();
+  const localEvents = useLocalEvents();
 
   const [view, setView] = useState<"coach" | "admin">("coach");
-  const [events, setEvents] = useState<HubEvent[]>([]);
+  const [remoteEvents, setRemoteEvents] = useState<HubEvent[]>([]);
   const [remoteAvailabilities, setRemoteAvailabilities] = useState<
     EventCoachAvailability[]
   >([]);
@@ -79,7 +141,19 @@ export default function EventCoachesPage() {
   const [search, setSearch] = useState("");
   const [onlyIncomplete, setOnlyIncomplete] = useState(false);
 
+  const [formOpen, setFormOpen] = useState(false);
+  const [form, setForm] = useState<EventForm>(EMPTY_FORM);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [savingEvent, setSavingEvent] = useState(false);
+
   const availabilities = source === "live" ? remoteAvailabilities : local.availabilities;
+
+  // En "live" le backend sert déjà les deux provenances. En "local" on assemble
+  // le flux crush.lu, l'événement de démo et ce qui a été créé dans ce navigateur.
+  const events = useMemo(
+    () => (source === "live" ? remoteEvents : [...remoteEvents, ...localEvents.events]),
+    [source, remoteEvents, localEvents.events],
+  );
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -92,7 +166,7 @@ export default function EventCoachesPage() {
       } catch {
         // Pas de session ou API injoignable : seul l'événement de démo reste.
       }
-      setEvents([...fromSocial, buildDemoEvent()]);
+      setRemoteEvents([...fromSocial, buildDemoEvent()]);
       setSource("local");
     }
 
@@ -107,7 +181,7 @@ export default function EventCoachesPage() {
         fetchHubEvents(),
         fetchEventAvailabilities(),
       ]);
-      setEvents(hubEvents);
+      setRemoteEvents(hubEvents);
       setRemoteAvailabilities(avails);
       setSource("live");
     } catch {
@@ -187,6 +261,121 @@ export default function EventCoachesPage() {
       { label: "Événements complets", value: String(fullEvents).padStart(2, "0") },
     ];
   }, [events, byEvent, availabilities]);
+
+  function openCreateForm() {
+    setEditingId(null);
+    setForm(EMPTY_FORM);
+    setFormOpen(true);
+    setNotice(null);
+  }
+
+  function openEditForm(event: HubEvent) {
+    setEditingId(event.id);
+    setForm(formFromEvent(event));
+    setFormOpen(true);
+    setNotice(null);
+  }
+
+  function closeForm() {
+    setFormOpen(false);
+    setEditingId(null);
+    setForm(EMPTY_FORM);
+  }
+
+  async function handleSubmitEvent(submitEvent: FormEvent<HTMLFormElement>) {
+    submitEvent.preventDefault();
+
+    const title = form.title.trim();
+    if (!title) {
+      setNotice({ kind: "error", text: "Le titre de l'événement est obligatoire." });
+      return;
+    }
+
+    const parsedDate = new Date(form.dateTime);
+    if (!form.dateTime || Number.isNaN(parsedDate.getTime())) {
+      setNotice({ kind: "error", text: "Indiquez une date et une heure valides." });
+      return;
+    }
+
+    const needed = Number.parseInt(form.coachesNeeded, 10);
+    const draft: HubEventDraft = {
+      title,
+      eventType: form.eventType.trim() || "Événement",
+      dateTime: parsedDate.toISOString(),
+      location: form.location.trim(),
+      description: form.description.trim() || null,
+      imageUrl: form.imageUrl.trim() || null,
+      eventUrl: form.eventUrl.trim() || null,
+      coachesNeeded:
+        Number.isFinite(needed) && needed > 0 ? needed : DEFAULT_COACHES_NEEDED,
+    };
+
+    setSavingEvent(true);
+    setNotice(null);
+    try {
+      if (source === "live") {
+        if (editingId) {
+          const updated = await updateHubEvent(editingId, draft);
+          setRemoteEvents((prev) =>
+            prev.map((item) => (item.id === updated.id ? updated : item)),
+          );
+        } else {
+          const created = await createHubEvent(draft);
+          setRemoteEvents((prev) => [...prev, created]);
+        }
+      } else if (editingId) {
+        localEvents.update(editingId, draft);
+      } else {
+        localEvents.create(draft);
+      }
+
+      setNotice({
+        kind: "success",
+        text: editingId
+          ? `« ${title} » a été mis à jour.`
+          : `« ${title} » est créé — les coachs peuvent s'y inscrire.`,
+      });
+      closeForm();
+    } catch (err) {
+      setNotice({
+        kind: "error",
+        text: err instanceof Error ? err.message : "Impossible d'enregistrer l'événement.",
+      });
+    } finally {
+      setSavingEvent(false);
+    }
+  }
+
+  async function handleDeleteEvent(event: HubEvent) {
+    const confirmed = window.confirm(
+      `Supprimer « ${event.title} » ? Les disponibilités déclarées dessus seront perdues.`,
+    );
+    if (!confirmed) return;
+
+    setBusyEventId(event.id);
+    setNotice(null);
+    try {
+      if (source === "live") {
+        await deleteHubEvent(event.id);
+        setRemoteEvents((prev) => prev.filter((item) => item.id !== event.id));
+        setRemoteAvailabilities((prev) =>
+          prev.filter((item) => item.eventId !== event.id),
+        );
+      } else {
+        localEvents.remove(event.id);
+        local.dropEvent(event.id);
+      }
+      if (editingId === event.id) closeForm();
+      setNotice({ kind: "success", text: `« ${event.title} » a été supprimé.` });
+    } catch (err) {
+      setNotice({
+        kind: "error",
+        text: err instanceof Error ? err.message : "Impossible de supprimer l'événement.",
+      });
+    } finally {
+      setBusyEventId(null);
+    }
+  }
 
   async function handleDeclare(event: HubEvent) {
     const name = coachName.trim();
@@ -298,7 +487,7 @@ export default function EventCoachesPage() {
       <SectionHeader
         eyebrow="🎟️ Événements & Billetterie"
         title="Événements & disponibilités coachs"
-        description="Les événements publiés sur crush.lu remontent ici. Chaque coach s'y déclare disponible, l'admin confirme l'affectation et le coach est ajouté à l'événement."
+        description="Créez vos événements ici, à côté de ceux publiés sur crush.lu. Chaque coach se déclare disponible sur ceux qui l'intéressent, l'admin confirme l'affectation et le coach est ajouté à l'événement."
       />
 
       <HeroStats metrics={metrics} />
@@ -307,8 +496,9 @@ export default function EventCoachesPage() {
         <div className="status-banner warning">
           Mode local — les routes <code>/hub/events*</code> ne répondent pas encore.
           Les événements affichés proviennent du flux crush.lu déjà branché, complétés
-          par un événement de démonstration, et les disponibilités sont enregistrées
-          dans ce navigateur uniquement.
+          par un événement de démonstration. Les événements que vous créez ici et les
+          disponibilités déclarées sont enregistrés dans ce navigateur uniquement :
+          vos coachs ne les verront pas tant que le backend n&apos;expose pas ces routes.
         </div>
       ) : null}
 
@@ -359,7 +549,144 @@ export default function EventCoachesPage() {
           />
           <span>Seulement les événements incomplets</span>
         </label>
+
+        <button
+          type="button"
+          className="button"
+          onClick={() => (formOpen && !editingId ? closeForm() : openCreateForm())}
+        >
+          {formOpen && !editingId ? "Fermer" : "➕ Créer un événement"}
+        </button>
       </div>
+
+      {formOpen ? (
+        <Panel
+          title={editingId ? "Modifier l'événement" : "Nouvel événement"}
+          description="Les coachs verront cette fiche dans la liste ci-dessous et pourront s'y inscrire."
+        >
+          <form className="event-form" onSubmit={(e) => void handleSubmitEvent(e)}>
+            <label className="devlog-field">
+              <span>Titre *</span>
+              <input
+                type="text"
+                required
+                placeholder="Ex : Speed dating 30-40 ans"
+                value={form.title}
+                onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
+              />
+            </label>
+
+            <label className="devlog-field">
+              <span>Type d&apos;événement</span>
+              <input
+                type="text"
+                list="event-type-options"
+                placeholder="Speed dating"
+                value={form.eventType}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, eventType: e.target.value }))
+                }
+              />
+              <datalist id="event-type-options">
+                {EVENT_TYPES.map((type) => (
+                  <option key={type} value={type} />
+                ))}
+              </datalist>
+            </label>
+
+            <label className="devlog-field">
+              <span>Date et heure *</span>
+              <input
+                type="datetime-local"
+                required
+                value={form.dateTime}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, dateTime: e.target.value }))
+                }
+              />
+            </label>
+
+            <label className="devlog-field">
+              <span>Lieu</span>
+              <input
+                type="text"
+                placeholder="Ex : Brasserie du Kirchberg, Luxembourg"
+                value={form.location}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, location: e.target.value }))
+                }
+              />
+            </label>
+
+            <label className="devlog-field">
+              <span>Coachs nécessaires</span>
+              <input
+                type="number"
+                min={1}
+                max={20}
+                value={form.coachesNeeded}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, coachesNeeded: e.target.value }))
+                }
+              />
+            </label>
+
+            <label className="devlog-field">
+              <span>Lien de la fiche (optionnel)</span>
+              <input
+                type="url"
+                placeholder="https://crush.lu/events/..."
+                value={form.eventUrl}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, eventUrl: e.target.value }))
+                }
+              />
+            </label>
+
+            <label className="devlog-field">
+              <span>Image de couverture (optionnel)</span>
+              <input
+                type="url"
+                placeholder="https://..."
+                value={form.imageUrl}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, imageUrl: e.target.value }))
+                }
+              />
+            </label>
+
+            <label className="devlog-field event-form-wide">
+              <span>Brief pour les coachs (optionnel)</span>
+              <textarea
+                rows={3}
+                placeholder="Déroulé, matériel à prévoir, heure d'arrivée..."
+                value={form.description}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, description: e.target.value }))
+                }
+              />
+            </label>
+
+            <div className="event-form-actions">
+              <button type="submit" className="button" disabled={savingEvent}>
+                {savingEvent
+                  ? "Enregistrement..."
+                  : editingId
+                  ? "Enregistrer les modifications"
+                  : "Créer l'événement"}
+              </button>
+              <button
+                type="button"
+                className="button secondary"
+                onClick={closeForm}
+                disabled={savingEvent}
+              >
+                Annuler
+              </button>
+            </div>
+          </form>
+        </Panel>
+      ) : null}
 
       {view === "coach" ? (
         <Panel
@@ -394,7 +721,9 @@ export default function EventCoachesPage() {
         </div>
       ) : sortedEvents.length === 0 ? (
         <div className="panel" style={{ padding: "2rem", textAlign: "center", color: "var(--muted)" }}>
-          Aucun événement ne correspond à ce filtre.
+          {events.length === 0
+            ? "Aucun événement pour l'instant — créez le premier avec « ➕ Créer un événement »."
+            : "Aucun événement ne correspond à ce filtre."}
         </div>
       ) : view === "coach" ? (
         <div className="event-grid">
@@ -424,7 +753,14 @@ export default function EventCoachesPage() {
                   ) : (
                     <span className="event-card-media-fallback">🎟️</span>
                   )}
-                  {event.isDemo ? <span className="demo-badge">Démo</span> : null}
+                  <div className="event-card-badges">
+                    {event.origin === "hub" ? (
+                      <span className="origin-badge hub">Créé au hub</span>
+                    ) : null}
+                    {event.isDemo ? (
+                      <span className="origin-badge demo">Démo</span>
+                    ) : null}
+                  </div>
                 </div>
 
                 <div className="event-card-body">
@@ -437,6 +773,10 @@ export default function EventCoachesPage() {
                     <span>🗓️ {formatDate(event.dateTime)}</span>
                     <span>📍 {event.location || "Lieu à confirmer"}</span>
                   </div>
+
+                  {event.description ? (
+                    <p className="event-card-description">{event.description}</p>
+                  ) : null}
 
                   <div className="staffing-bar" aria-hidden="true">
                     <div
@@ -538,6 +878,27 @@ export default function EventCoachesPage() {
                       Voir la fiche sur crush.lu ↗
                     </a>
                   ) : null}
+
+                  {event.origin === "hub" ? (
+                    <div className="admin-actions">
+                      <button
+                        type="button"
+                        className="button secondary"
+                        disabled={busy}
+                        onClick={() => openEditForm(event)}
+                      >
+                        ✏️ Modifier
+                      </button>
+                      <button
+                        type="button"
+                        className="button secondary"
+                        disabled={busy}
+                        onClick={() => void handleDeleteEvent(event)}
+                      >
+                        🗑️ Supprimer
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
               </article>
             );
@@ -554,11 +915,34 @@ export default function EventCoachesPage() {
             return (
               <Panel
                 key={event.id}
-                title={`${event.title}${event.isDemo ? " · Démo" : ""}`}
+                title={`${event.title}${event.isDemo ? " · Démo" : ""}${
+                  event.origin === "hub" ? " · Créé au hub" : ""
+                }`}
                 description={`${formatDate(event.dateTime)} · ${
                   event.location || "Lieu à confirmer"
                 } · ${assigned.length}/${needed} coach(s) confirmé(s)`}
               >
+                {event.origin === "hub" ? (
+                  <div className="admin-actions event-owner-actions">
+                    <button
+                      type="button"
+                      className="button secondary"
+                      disabled={busy}
+                      onClick={() => openEditForm(event)}
+                    >
+                      ✏️ Modifier l&apos;événement
+                    </button>
+                    <button
+                      type="button"
+                      className="button secondary"
+                      disabled={busy}
+                      onClick={() => void handleDeleteEvent(event)}
+                    >
+                      🗑️ Supprimer
+                    </button>
+                  </div>
+                ) : null}
+
                 {list.length === 0 ? (
                   <div style={{ padding: "1.2rem", textAlign: "center", color: "var(--muted)" }}>
                     Aucun coach ne s'est encore déclaré disponible sur cet événement.

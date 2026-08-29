@@ -358,6 +358,13 @@ export type EventCoachAvailability = {
   assignedAt?: string | null;
 };
 
+/**
+ * Provenance d'un événement :
+ * - "crush" → publié sur crush.lu, le hub ne fait que l'afficher (lecture seule).
+ * - "hub"   → créé depuis cette page, donc modifiable et supprimable ici.
+ */
+export type HubEventOrigin = "crush" | "hub";
+
 export type HubEvent = {
   id: string;
   title: string;
@@ -365,13 +372,29 @@ export type HubEvent = {
   /** ISO datetime de début de l'événement. */
   dateTime: string;
   location: string;
+  /** Contexte libre affiché aux coachs (déroulé, matériel, consignes). */
+  description?: string | null;
   imageUrl?: string | null;
   /** Lien public vers la fiche de l'événement sur crush.lu. */
   eventUrl?: string | null;
   /** Nombre de coachs attendus sur l'événement. */
   coachesNeeded: number;
+  /** Défaut "crush" quand le backend ne précise rien. */
+  origin?: HubEventOrigin;
   /** Vrai pour l'événement de démonstration servi sans backend. */
   isDemo?: boolean;
+};
+
+/** Champs saisis dans le formulaire de création / édition d'un événement hub. */
+export type HubEventDraft = {
+  title: string;
+  eventType: string;
+  dateTime: string;
+  location: string;
+  description?: string | null;
+  imageUrl?: string | null;
+  eventUrl?: string | null;
+  coachesNeeded: number;
 };
 
 export type LinkedCrushCredit = {

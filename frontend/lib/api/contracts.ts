@@ -80,6 +80,10 @@ export type HubEventsResponse = {
   items: HubEvent[];
 };
 
+export type HubEventResponse = {
+  item: HubEvent;
+};
+
 export type EventAvailabilitiesResponse = {
   items: EventCoachAvailability[];
 };

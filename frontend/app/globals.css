@@ -549,6 +549,9 @@ textarea {
 
 .devlog-field input[type="text"],
 .devlog-field input[type="date"],
+.devlog-field input[type="datetime-local"],
+.devlog-field input[type="number"],
+.devlog-field input[type="url"],
 .devlog-field input[type="file"],
 .devlog-field select,
 .devlog-field textarea {
@@ -1874,12 +1877,22 @@ body:has(.shell.theme-dark) {
 
 .shell.theme-dark .devlog-field input[type="text"],
 .shell.theme-dark .devlog-field input[type="date"],
+.shell.theme-dark .devlog-field input[type="datetime-local"],
+.shell.theme-dark .devlog-field input[type="number"],
+.shell.theme-dark .devlog-field input[type="url"],
 .shell.theme-dark .devlog-field input[type="file"],
 .shell.theme-dark .devlog-field select,
 .shell.theme-dark .devlog-field textarea {
   background: var(--glass);
   border-color: var(--line);
   color: var(--text);
+}
+
+/* Sinon le sélecteur natif (calendrier, flèches) reste clair sur fond sombre. */
+.shell.theme-dark .devlog-field input[type="date"],
+.shell.theme-dark .devlog-field input[type="datetime-local"],
+.shell.theme-dark .devlog-field input[type="number"] {
+  color-scheme: dark;
 }
 
 .shell.theme-dark .devlog-field span { color: var(--muted); }
@@ -2232,18 +2245,33 @@ body:has(.shell.theme-dark) {
   font-size: 2.4rem;
 }
 
-.demo-badge {
+.event-card-badges {
   position: absolute;
   top: 0.6rem;
   right: 0.6rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.35rem;
+}
+
+.origin-badge {
   padding: 0.2rem 0.65rem;
   border-radius: 999px;
-  background: rgba(245, 158, 11, 0.9);
-  color: #422006;
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+
+.origin-badge.demo {
+  background: rgba(245, 158, 11, 0.9);
+  color: #422006;
+}
+
+.origin-badge.hub {
+  background: rgba(37, 99, 235, 0.9);
+  color: #eff6ff;
 }
 
 .event-card-body {
@@ -2372,6 +2400,36 @@ body:has(.shell.theme-dark) {
   gap: 1rem;
 }
 
+.event-card-description {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--muted);
+  white-space: pre-line;
+}
+
+.event-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.9rem;
+  align-items: end;
+}
+
+.event-form-wide,
+.event-form-actions {
+  grid-column: 1 / -1;
+}
+
+.event-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.event-owner-actions {
+  margin-bottom: 1rem;
+}
+
 .admin-actions {
   display: flex;
   flex-wrap: wrap;
@@ -2416,4 +2474,8 @@ body:has(.shell.theme-dark) {
   color: #fda4af;
 }
 .shell.theme-dark .event-card-link { color: var(--indigo-2); }
-.shell.theme-dark .demo-badge { color: #1f1300; }
+.shell.theme-dark .origin-badge.demo { color: #1f1300; }
+.shell.theme-dark .origin-badge.hub {
+  background: rgba(99, 102, 241, 0.95);
+  color: #eef2ff;
+}
