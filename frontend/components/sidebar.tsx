@@ -19,6 +19,7 @@ const navSections: NavSection[] = [
   {
     title: "Événements & Billetterie",
     items: [
+      { href: "/events/coaches", label: "Événements & Coachs", icon: "🙋" },
       { href: "/events/cancellations", label: "Annulations & Crédits", icon: "🎟️" },
     ],
   },

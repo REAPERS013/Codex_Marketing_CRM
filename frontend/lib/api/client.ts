@@ -172,7 +172,15 @@ async function request<T>(
     throw new Error(message);
   }
 
-  return (await response.json()) as T;
+  // 204 / 205 et les corps vides (fréquents sur DELETE) n'ont rien à parser.
+  if (response.status === 204 || response.status === 205) {
+    return undefined as T;
+  }
+
+  const body = await response.text();
+  if (!body) return undefined as T;
+
+  return JSON.parse(body) as T;
 }
 
 export async function apiGet<T>(path: string, init?: RequestInit): Promise<T> {
@@ -201,4 +209,8 @@ export async function apiPatch<T>(
     method: "PATCH",
     body: JSON.stringify(body),
   });
+}
+
+export async function apiDelete<T>(path: string, init?: RequestInit): Promise<T> {
+  return request<T>(path, { ...init, method: "DELETE" });
 }
