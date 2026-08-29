@@ -2,6 +2,8 @@ import {
   CustomerSnapshot,
   EventCancellationRegistration,
   EventCancellationSummary,
+  EventCoachAvailability,
+  HubEvent,
   LocationItem,
   PaymentInItem,
   PaymentOutItem,
@@ -69,6 +71,21 @@ export type EventCancellationsResponse = {
 export type EventCancellationDetailResponse = {
   event: EventCancellationSummary;
   items: EventCancellationRegistration[];
+};
+
+// Staffing des événements. Ces routes restent à implémenter côté Django : tant
+// qu'elles répondent 404, la page /events/coaches bascule en mode local
+// (cf. lib/data/event-coach-storage.ts) sans jamais inventer de données live.
+export type HubEventsResponse = {
+  items: HubEvent[];
+};
+
+export type EventAvailabilitiesResponse = {
+  items: EventCoachAvailability[];
+};
+
+export type EventAvailabilityResponse = {
+  item: EventCoachAvailability;
 };
 
 export type WhatsAppTemplatesResponse = { items: WhatsAppTemplate[] };

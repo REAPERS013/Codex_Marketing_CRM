@@ -335,6 +335,45 @@ export type EventCancellationSummary = {
   openCashRefundTotalCents: number;
 };
 
+// Staffing des événements — un événement publié sur crush.lu est relié au hub,
+// et les coachs s'y déclarent disponibles. Un admin transforme ensuite une
+// disponibilité en affectation ("assigned"), ce qui ajoute le coach à l'événement.
+export type EventCoachRole =
+  | "Animation"
+  | "Accueil"
+  | "Photo/Vidéo"
+  | "Support";
+
+export type CoachAvailabilityStatus = "available" | "assigned" | "declined";
+
+export type EventCoachAvailability = {
+  id: string;
+  eventId: string;
+  coachName: string;
+  coachEmail?: string | null;
+  role: EventCoachRole;
+  status: CoachAvailabilityStatus;
+  note?: string;
+  declaredAt: string;
+  assignedAt?: string | null;
+};
+
+export type HubEvent = {
+  id: string;
+  title: string;
+  eventType: string;
+  /** ISO datetime de début de l'événement. */
+  dateTime: string;
+  location: string;
+  imageUrl?: string | null;
+  /** Lien public vers la fiche de l'événement sur crush.lu. */
+  eventUrl?: string | null;
+  /** Nombre de coachs attendus sur l'événement. */
+  coachesNeeded: number;
+  /** Vrai pour l'événement de démonstration servi sans backend. */
+  isDemo?: boolean;
+};
+
 export type LinkedCrushCredit = {
   id: string;
   status: string;
