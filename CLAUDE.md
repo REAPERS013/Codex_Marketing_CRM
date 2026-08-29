@@ -55,4 +55,8 @@ The backend is reached at a dedicated origin (e.g. `https://api.crush.lu`), and 
 ## CI / deploy notes
 
 - `auto-merge-reapers013.yml` auto-approves and squash-merges PRs from user `REAPERS013`. The author check is intentionally at **step level**, not job level: `pull_request_target` fires on syncs of any open PR (including downstream forks tracking main), and a job-level filter would mark the workflow as failed (red X on main) instead of skipped. Don't move the guard.
+  The approve step is `continue-on-error: true` on purpose: GitHub blocks `GITHUB_TOKEN` from approving PRs unless
+  Settings → Actions → General → "Allow GitHub Actions to create and approve pull requests" is enabled, and that
+  refusal used to abort the job before the squash-merge step ran. Note `pull_request_target` always executes the
+  workflow file from the **base** branch, so edits to this file only take effect for PRs opened after they land on main.
 - Static Web Apps workflow runs on `push` to main and on PR open/sync/reopen/close. PR builds get preview environments automatically.

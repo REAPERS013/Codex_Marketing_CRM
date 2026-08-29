@@ -31,8 +31,15 @@ jobs:
             echo "Skipping: author='$author' draft='$draft' (only auto-merging REAPERS013, non-draft)"
           fi
 
+      # GitHub refuses `addPullRequestReview` from GITHUB_TOKEN unless
+      # Settings → Actions → General → "Allow GitHub Actions to create and
+      # approve pull requests" is enabled. That refusal used to abort the job
+      # (`bash -e`) before the merge step ever ran, so auto-merge never landed
+      # a single PR. Keep attempting the approval — it starts working the day
+      # the setting is turned on — but never let it block the merge.
       - name: Approve PR
         if: steps.gate.outputs.should_run == 'true'
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_URL: ${{ github.event.pull_request.html_url }}
